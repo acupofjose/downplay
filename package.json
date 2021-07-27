@@ -1,0 +1,10 @@
+{
+  "name": "percetta",
+  "version": "1.0.0",
+  "description": "",
+  "repository": {
+    "url": "https://github.com/acupofjose/percetta"
+  },
+  "author": "Joseph Schultz <joseph@acupofjose.com>",
+  "license": "MIT"
+}

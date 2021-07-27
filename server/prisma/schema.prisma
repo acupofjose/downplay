@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Feed {
+  id Int @id @default(autoincrement())
+  title String
+  entities Entity[]
+}
+
+model Entity {
+  id  Int @id @default(autoincrement())
+  feed  Feed? @relation(fields: [feedId], references: [id])
+  feedId Int?
+  title String
+  description String
+  channel String
+  filename String
+  path String?
+  originalUrl String
+  downloadUrl String
+  queue Queue?
+  createdAt DateTime @default(now())
+}
+
+model Queue {
+  id Int @id @default(autoincrement())
+  entity Entity @relation(fields: [entityId], references: [id])
+  entityId Int
+  isRunning Boolean @default(false)
+  hasErrored Boolean @default(false)
+  errorCount Int @default(0)
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+}

@@ -1,0 +1,45 @@
+import WebSocket, * as ws from "ws"
+import { v4 as uuidv4 } from "uuid"
+
+class SocketManager {
+  server: ws.Server
+  sockets: { [key: string]: WebSocket | null } = {}
+
+  constructor() {
+    this.server = new ws.Server({ noServer: true })
+    this.server.on("connection", this.onConnect)
+  }
+
+  static getIpFromRequest = (request: any) => {
+    return request.headers["x-forwarded-for"] || request.connection.remoteAddress
+  }
+
+  httpServerUpgradeHandler = (request: any, socket: any, head: any) => {
+    this.server.handleUpgrade(request, socket, head, (socket) => {
+      console.log(`Socket Connection on ${SocketManager.getIpFromRequest(request)}`)
+      this.server.emit("connection", socket, request)
+    })
+  }
+
+  onConnect = (socket: WebSocket) => {
+    const uuid = uuidv4()
+    this.sockets[uuid] = socket
+
+    socket.on("message", (message) => this.onMessage(socket, message))
+    socket.on("ping", (data) => socket.send(data))
+    socket.on("close", () => (this.sockets[uuid] = null))
+  }
+
+  onMessage = (socket: WebSocket, message: WebSocket.Data) => {
+    console.log(message)
+  }
+
+  broadcast = (message: string) => {
+    const json = JSON.stringify(message)
+    for (const [uuid, socket] of Object.entries(this.sockets)) {
+      socket?.send(json)
+    }
+  }
+}
+
+export default new SocketManager()
