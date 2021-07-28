@@ -2,17 +2,12 @@ import React, { useState } from "react"
 import { Provider as StyletronProvider } from "styletron-react"
 import { Client as Styletron } from "styletron-engine-atomic"
 import { DarkTheme, BaseProvider, styled } from "baseui"
-import { StatefulInput } from "baseui/input"
 import Navbar from "./components/Navbar"
+import RequestForm from "./components/RequestForm"
+import EntitiesList from "./components/EntitiesList"
+import eventBus, { WEBSOCKET_MESSAGE } from "./events"
 
 const engine = new Styletron()
-
-const Centered = styled("div", {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  height: "100%",
-})
 
 class App extends React.Component {
   socket: WebSocket | null = null
@@ -30,7 +25,12 @@ class App extends React.Component {
     const url = origin.includes("https") ? origin.replace("https", "wss") : origin.replace("http", "ws")
     this.socket = new WebSocket(url)
     this.socket.onopen = () => console.log(`Connection opened to: ${url}`)
-    this.socket.onmessage = (message) => console.log(message)
+
+    this.socket.onmessage = (message) => {
+      const json = JSON.parse(message.data)
+      PubSub.publish(WEBSOCKET_MESSAGE, json)
+    }
+
     this.socket.onerror = (err) => console.error(err)
     this.socket.onclose = (ev) => {
       console.log(`Connection closed, attempting to reconnection.`)
@@ -43,9 +43,8 @@ class App extends React.Component {
       <StyletronProvider value={engine}>
         <BaseProvider theme={DarkTheme}>
           <Navbar />
-          <Centered>
-            <StatefulInput placeholder={"Youtube URL"} />
-          </Centered>
+          <RequestForm />
+          <EntitiesList />
         </BaseProvider>
       </StyletronProvider>
     )

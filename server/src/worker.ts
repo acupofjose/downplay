@@ -9,16 +9,14 @@ let isProcessing = false
 const tickInterval = 5000
 const prisma = new PrismaClient()
 
-const DOWNLOAD_DIR = path.join(__dirname, "..", "storage")
-
 function download(entity: Entity, onProgress: (chunkLength: number, totalLength: number) => void): Promise<void> {
   return new Promise(async (resolve, reject) => {
-    const outDir = path.join(DOWNLOAD_DIR, entity.channel)
+    const outDir = path.join(__dirname, "..", "storage", entity.channel)
     const outPath = path.join(outDir, entity.filename)
 
     if (!fs.existsSync(outDir)) {
       console.log(`Directory ${outDir} does not exist, creating...`)
-      fs.mkdirSync(outDir, { recursive: true })
+      fs.mkdirSync(outDir)
     }
 
     const { data, headers } = await axios({
@@ -54,8 +52,7 @@ async function process(instance: Queue) {
     const msg = {
       event: EVENT_DOWNLOAD_PROGRESS,
       entityId: instance?.entityId,
-      title: entity?.title,
-      progress: progress / total,
+      progress: +((progress / total) * 100).toFixed(2),
     }
 
     parentPort?.postMessage(msg)
@@ -71,7 +68,6 @@ async function process(instance: Queue) {
     const msg = {
       event: EVENT_DOWNLOAD_COMPLETE,
       entityId: instance.entityId,
-      title: entity?.title,
     }
 
     parentPort?.postMessage(msg)

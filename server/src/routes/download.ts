@@ -1,14 +1,14 @@
 import { Router } from "express"
 import { PrismaClient } from "@prisma/client"
-import { EVENT_DOWNLOAD_PROGRESS, YoutubedlResult } from "../types"
+import { YoutubedlResult } from "../types"
 import youtubedl from "youtube-dl-exec"
 import WorkerManager from "../worker-manager"
 
 const router = Router()
 const prisma = new PrismaClient()
 
-router.get("/download", async (req, res, next) => {
-  const { url } = req.query
+router.post("/create", async (req, res, next) => {
+  const { url, audioOnly } = req.body
 
   if (!url) res.status(400).json({ message: "Request must include `url`" })
 
@@ -21,7 +21,7 @@ router.get("/download", async (req, res, next) => {
       noCheckCertificate: true,
       preferFreeFormats: true,
       youtubeSkipDashManifest: true,
-      extractAudio: true,
+      extractAudio: audioOnly !== false,
       audioQuality: 0,
       printJson: true,
     })) as YoutubedlResult
