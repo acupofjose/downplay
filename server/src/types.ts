@@ -1,3 +1,4 @@
+export const EVENT_DOWNLOAD_ERROR = "download:error"
 export const EVENT_DOWNLOAD_PROGRESS = "download:progress"
 export const EVENT_DOWNLOAD_COMPLETE = "download:complete"
 
