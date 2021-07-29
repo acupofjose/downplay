@@ -1,7 +1,6 @@
 import React from "react"
 import { Input } from "baseui/input"
 import { styled, useStyletron } from "baseui"
-import { Card } from "baseui/card"
 import { Button } from "baseui/button"
 import { download } from "../api"
 import { REFRESH_ENTITIES } from "../events"

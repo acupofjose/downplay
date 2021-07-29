@@ -1,43 +1,62 @@
 import axios from "axios"
 import fs from "fs"
 import path from "path"
-import { parentPort } from "worker_threads"
-import { EVENT_DOWNLOAD_COMPLETE, EVENT_DOWNLOAD_PROGRESS } from "./types"
+import { parentPort, workerData } from "worker_threads"
+import { EVENT_DOWNLOAD_COMPLETE, EVENT_DOWNLOAD_PROGRESS, Format, YoutubedlResult } from "./types"
 import { PrismaClient, Queue, Entity } from "@prisma/client"
+import { STORAGE_PATH } from "./constants"
 
 let isProcessing = false
 const tickInterval = 5000
 const prisma = new PrismaClient()
 
+const log = (data: any) => console.log(`[${workerData.name}] ${data}`)
+const error = (data: any) => console.error(`[${workerData.name}] ${data}`)
+const getWorkerId = () => workerData.id
+
 function download(entity: Entity, onProgress: (chunkLength: number, totalLength: number) => void): Promise<void> {
   return new Promise(async (resolve, reject) => {
-    const outDir = path.join(__dirname, "..", "storage", entity.channel)
-    const outPath = path.join(outDir, entity.filename)
+    const outDir = path.join(STORAGE_PATH, entity.channel)
+    const outPath = path.join(outDir, `${entity.title.replace(/[^a-zA-Z\d\s:]/g, "-")}.m4a`)
 
     if (!fs.existsSync(outDir)) {
-      console.log(`Directory ${outDir} does not exist, creating...`)
+      log(`Directory ${outDir} does not exist, creating...`)
       fs.mkdirSync(outDir)
     }
 
-    const { data, headers } = await axios({
-      url: entity.downloadUrl,
-      method: "GET",
-      responseType: "stream",
-    })
-    const totalLength = headers["content-length"]
+    const json = JSON.parse(entity.JSON) as YoutubedlResult
+    let format: Format | null = null
+    for (const item of json.formats) {
+      if (item.acodec.includes("mp4") && item.vcodec === "none" && item.quality === 0) {
+        format = item
+        break
+      }
+    }
 
-    console.log(`Creating write stream to ${outPath}`)
-    const writer = fs.createWriteStream(outPath)
-    await prisma.entity.update({ where: { id: entity.id }, data: { path: outPath } })
+    if (format) {
+      const { data, headers } = await axios({
+        url: format.url,
+        method: "GET",
+        responseType: "stream",
+      })
+      const totalLength = headers["content-length"]
 
-    data.on("data", (chunk: any) => onProgress(chunk.length, totalLength))
-    data.on("error", (err: any) => reject(err))
-    data.on("close", () => resolve())
-    data.pipe(writer)
+      log(`Creating write stream to ${outPath}`)
+      const writer = fs.createWriteStream(outPath)
+      await prisma.entity.update({ where: { id: entity.id }, data: { path: outPath } })
+
+      data.on("data", (chunk: any) => onProgress(chunk.length, totalLength))
+      data.on("error", (err: any) => reject(err))
+      data.on("close", () => resolve())
+      data.pipe(writer)
+    } else {
+      error(`Unable to find applicable format`)
+    }
   })
 }
 
 async function process(instance: Queue) {
+  await prisma.queue.update({ where: { id: instance.id }, data: { isRunning: true, workerId: getWorkerId() } })
   const entity = await prisma.entity.findFirst({ where: { id: instance?.entityId } })
 
   if (!entity) {
@@ -61,9 +80,12 @@ async function process(instance: Queue) {
   try {
     parentPort?.postMessage(`Attempting to download ${entity?.title}`)
 
-    await prisma.queue.update({ where: { id: instance.id }, data: { isRunning: true } })
     await download(entity, onDownloadProgress)
-    await prisma.queue.update({ where: { id: instance.id }, data: { completedAt: new Date() } })
+
+    await prisma.queue.update({
+      where: { id: instance.id },
+      data: { isRunning: false, workerId: null, completedAt: new Date() },
+    })
 
     const msg = {
       event: EVENT_DOWNLOAD_COMPLETE,
@@ -71,9 +93,9 @@ async function process(instance: Queue) {
     }
 
     parentPort?.postMessage(msg)
-    console.log(`Completed Queue[#${instance.id}]`)
+    log(`Completed Queue[#${instance.id}]`)
   } catch (err) {
-    console.error(err)
+    error(err)
   }
 }
 
@@ -81,7 +103,11 @@ async function tick() {
   if (isProcessing) return
   isProcessing = true
 
-  const next = await prisma.queue.findFirst({ where: { completedAt: null }, orderBy: { createdAt: "desc" } })
+  const next = await prisma.queue.findFirst({
+    where: { completedAt: null, isRunning: false },
+    orderBy: { createdAt: "asc" },
+  })
+
   if (next) {
     await process(next)
   }
@@ -90,7 +116,7 @@ async function tick() {
 }
 
 function init() {
-  console.log(`Registered Worker Loop.`)
+  log(`initialized`)
   setInterval(tick, tickInterval)
 }
 

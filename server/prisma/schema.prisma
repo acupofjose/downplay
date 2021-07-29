@@ -13,6 +13,10 @@ generator client {
 model Feed {
   id Int @id @default(autoincrement())
   title String
+  author String @default("Percetta")
+  isDefault Boolean @default(false)
+  description String?
+  imageUrl String?
   entities Entity[]
 }
 
@@ -23,16 +27,19 @@ model Entity {
   title String
   description String
   channel String
-  filename String
   path String?
   originalUrl String
-  downloadUrl String
+  thumbnailUrl String
+  thumbnailPath String?
+  codec String?
   queue Queue?
   createdAt DateTime @default(now())
+  JSON String
 }
 
 model Queue {
   id Int @id @default(autoincrement())
+  workerId String?
   entity Entity @relation(fields: [entityId], references: [id])
   entityId Int
   isRunning Boolean @default(false)

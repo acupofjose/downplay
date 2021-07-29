@@ -5,7 +5,7 @@ import { DarkTheme, BaseProvider, styled } from "baseui"
 import Navbar from "./components/Navbar"
 import RequestForm from "./components/RequestForm"
 import EntitiesList from "./components/EntitiesList"
-import eventBus, { WEBSOCKET_MESSAGE } from "./events"
+import { WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "./events"
 
 const engine = new Styletron()
 
@@ -24,7 +24,10 @@ class App extends React.Component {
     const origin = "http://localhost:3000"
     const url = origin.includes("https") ? origin.replace("https", "wss") : origin.replace("http", "ws")
     this.socket = new WebSocket(url)
-    this.socket.onopen = () => console.log(`Connection opened to: ${url}`)
+    this.socket.onopen = () => {
+      PubSub.publish(WEBSOCKET_OPEN)
+      console.log(`Connection opened to: ${url}`)
+    }
 
     this.socket.onmessage = (message) => {
       const json = JSON.parse(message.data)

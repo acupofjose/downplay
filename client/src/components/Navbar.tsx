@@ -9,7 +9,6 @@ export default () => {
       mainItems={mainItems}
       onMainItemSelect={(item) => {
         console.log(item)
-        setMainItems((prev) => setItemActive(prev, item))
       }}
     />
   )

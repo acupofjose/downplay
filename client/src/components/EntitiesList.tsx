@@ -5,7 +5,7 @@ import { Card, StyledAction, StyledBody } from "baseui/card"
 import { splitter } from "../util"
 import { Button } from "baseui/button"
 import { ProgressBar } from "baseui/progress-bar"
-import { REFRESH_ENTITIES, WEBSOCKET_MESSAGE } from "../events"
+import { REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "../events"
 import PubSub from "pubsub-js"
 
 class EntitiesList extends React.Component<any, { entities: Entity[]; progress: { [id: string]: number } }> {
@@ -20,6 +20,7 @@ class EntitiesList extends React.Component<any, { entities: Entity[]; progress: 
 
   componentDidMount() {
     this.refresh()
+    PubSub.subscribe(WEBSOCKET_OPEN, this.refresh)
     PubSub.subscribe(REFRESH_ENTITIES, this.refresh)
     PubSub.subscribe(WEBSOCKET_MESSAGE, this.handleWebsocketMessage)
   }
@@ -48,7 +49,20 @@ class EntitiesList extends React.Component<any, { entities: Entity[]; progress: 
 
   render() {
     return (
-      <FlexGrid flexGridColumnCount={3} flexGridColumnGap="scale800" flexGridRowGap="scale800">
+      <FlexGrid
+        flexGridColumnCount={this.state.entities.length === 0 ? 1 : 3}
+        flexGridColumnGap="scale800"
+        flexGridRowGap="scale800">
+        {this.state.entities.length === 0 && (
+          <FlexGridItem
+            overrides={{
+              Block: { style: { display: "block", margin: "0 auto", maxWidth: "350px", textAlign: "center" } },
+            }}>
+            <Card>
+              <StyledBody>Why not add some URLs up there?</StyledBody>
+            </Card>
+          </FlexGridItem>
+        )}
         {this.state.entities.map((entity) => (
           <FlexGridItem key={entity.id}>
             <Card>

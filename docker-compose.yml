@@ -1,0 +1,16 @@
+version: "3.3"
+
+services:
+  client:
+    build:
+      context: ./client
+    ports:
+      - 5000:5000
+
+  server:
+    build:
+      context: ./server
+    ports:
+      - 3000:3000
+    volumes:
+      - ./docker:/app/storage
