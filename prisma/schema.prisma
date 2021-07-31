@@ -12,6 +12,8 @@ generator client {
 
 model Feed {
   id Int @id @default(autoincrement())
+  userId Int
+  user User @relation(fields: [userId], references: [id]) 
   title String
   author String @default("Percetta")
   isDefault Boolean @default(false)
@@ -22,8 +24,10 @@ model Feed {
 
 model Entity {
   id  Int @id @default(autoincrement())
-  feed  Feed? @relation(fields: [feedId], references: [id])
+  userId Int
+  user User @relation(fields: [userId], references: [id]) 
   feedId Int?
+  feed  Feed? @relation(fields: [feedId], references: [id])
   title String
   description String
   channel String
@@ -39,6 +43,8 @@ model Entity {
 
 model Queue {
   id Int @id @default(autoincrement())
+  userId Int
+  user User @relation(fields: [userId], references: [id]) 
   workerId String?
   entity Entity @relation(fields: [entityId], references: [id])
   entityId Int
@@ -47,4 +53,22 @@ model Queue {
   errorCount Int @default(0)
   createdAt DateTime @default(now())
   completedAt DateTime?
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  username String @unique
+  password String
+  
+  feeds Feed[]
+  entities Entity[]
+  queueItems Queue[]
+
+  createdAt DateTime @default(now())
+}
+
+model Meta {
+  key String @unique
+  value String
+  createdAt DateTime @default(now())
 }

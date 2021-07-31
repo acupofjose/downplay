@@ -7,6 +7,7 @@ import { YoutubedlResult } from "../types"
 import youtubedl from "youtube-dl-exec"
 import WorkerManager from "../worker-manager"
 import { STORAGE_PATH } from "../constants"
+import { ensureAuthenticated } from "./guards"
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -17,7 +18,7 @@ const readdir = util.promisify(fs.readdir)
 const readfile = util.promisify(fs.readFile)
 const unlink = util.promisify(fs.unlink)
 
-router.post("/create", async (req, res, next) => {
+router.post("/", ensureAuthenticated, async (req, res, next) => {
   const { url, audioOnly, feedId } = req.body
   const results: Queue[] = []
 
@@ -34,9 +35,9 @@ router.post("/create", async (req, res, next) => {
 
     let feed: Feed | null = null
     if (feedId) {
-      feed = await prisma.feed.findFirst({ where: { id: feedId } })
+      feed = await prisma.feed.findFirst({ where: { id: feedId, userId: (req.user as any)._id } })
     } else {
-      feed = await prisma.feed.findFirst({ where: { isDefault: true } })
+      feed = await prisma.feed.findFirst({ where: { isDefault: true, userId: (req.user as any)._id } })
     }
 
     await youtubedl(url as string, {
@@ -60,6 +61,7 @@ router.post("/create", async (req, res, next) => {
 
         const entity = await prisma.entity.create({
           data: {
+            userId: 1,
             title: json.title,
             feedId: feed?.id,
             description: json.description,
@@ -86,5 +88,8 @@ router.post("/create", async (req, res, next) => {
     res.status(500).json({ message: err })
   }
 })
+
+router.get("/get/:id", (req, res, next) => {})
+router.get("/delete/:id", (req, res, next) => {})
 
 export default router

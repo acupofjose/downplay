@@ -88,6 +88,7 @@ class WorkerManager {
   enqueue = async (entity: Entity) => {
     const queueItem = await prisma.queue.create({
       data: {
+        userId: entity.userId,
         entityId: entity.id,
       },
       include: { entity: true },

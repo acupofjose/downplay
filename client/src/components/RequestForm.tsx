@@ -2,7 +2,7 @@ import React from "react"
 import { Input } from "baseui/input"
 import { styled, useStyletron } from "baseui"
 import { Button } from "baseui/button"
-import { download } from "../api"
+import { enqueue } from "../api"
 import { REFRESH_ENTITIES } from "../events"
 
 const Centered = styled("div", {
@@ -26,7 +26,7 @@ const RequestForm = () => {
     if (youtubeUrl && regex.test(youtubeUrl)) {
       setIsLoading(true)
 
-      await download(youtubeUrl)
+      await enqueue(youtubeUrl)
       PubSub.publish(REFRESH_ENTITIES)
       setYoutubeUrl("")
 

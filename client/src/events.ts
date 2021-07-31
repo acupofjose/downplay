@@ -1,3 +1,5 @@
+export const AUTH_LOGIN = "auth:login"
+export const AUTH_REGISTER = "auth:register"
 export const REFRESH_ENTITIES = "refresh:entities"
 export const DOWNLOAD_PROGRESS = "download:progress"
 export const DOWNLOAD_COMPLETE = "download:complete"

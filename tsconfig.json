@@ -10,8 +10,8 @@
     "downlevelIteration": true,
     "target": "ES2019",
     "skipLibCheck": true,
-    "types": []
+    "typeRoots": ["./types"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "types/index.d.ts"],
   "exclude": ["node_modules"]
 }

@@ -1,6 +1,33 @@
 import axios from "axios"
+import { IAppContext, LOCAL_STORAGE_KEY } from "./context/AppContext"
 
-const hostname = "http://localhost:3000"
+let hostname = ""
+if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
+  hostname = `http://localhost:3000`
+} else {
+  hostname = `${window.location.protocol}//${window.location.hostname}`
+}
+
+const getLocalStorageState = (key: string = LOCAL_STORAGE_KEY): IAppContext | null => {
+  try {
+    const item = localStorage.getItem(key)
+    if (!item) return null
+
+    const json = JSON.parse(item)
+    return json as IAppContext
+  } catch (err) {
+    return null
+  }
+}
+
+const instance = () => {
+  const context = getLocalStorageState()
+
+  return axios.create({
+    baseURL: hostname,
+    headers: { Authorization: `Bearer ${context?.token}` },
+  })
+}
 
 export interface Entity {
   id: number
@@ -26,14 +53,31 @@ export interface Queue {
   completedAt: Date
 }
 
-export const download = async (youtubeUrl: string, audioOnly: boolean = true) => {
-  const endpoint = `${hostname}/download/create`
+export const login = async (username: string, password: string) => {
+  const endpoint = `/auth/login`
+  const result = await instance().post(endpoint, {
+    username,
+    password,
+  })
+  return result.data as { token: string }
+}
+
+export const register = async (username: string, password: string) => {
+  const endpoint = `/auth/register`
+  const result = await instance().post(endpoint, {
+    username,
+    password,
+  })
+  return result.data as { token: string }
+}
+
+export const enqueue = async (youtubeUrl: string, audioOnly: boolean = true) => {
+  const endpoint = `/queue`
   try {
-    const result = await axios.post(endpoint, {
+    const result = await instance().post(endpoint, {
       url: youtubeUrl,
       audioOnly,
     })
-    console.log(result)
     return result
   } catch (err) {
     console.log(err)
@@ -43,24 +87,33 @@ export const download = async (youtubeUrl: string, audioOnly: boolean = true) =>
 export const getQueue = () => {}
 
 export const getEntities = async () => {
-  const endpoint = `${hostname}/entities`
+  const endpoint = `/entities`
   try {
-    const result = await axios.get<Entity[]>(endpoint)
-    console.log(result)
+    const result = await instance().get<Entity[]>(endpoint)
     return result
   } catch (err) {
     console.log(err)
   }
 }
+
 export const getEntity = async (entityId: string) => {
-  const endpoint = `${hostname}/entities/${entityId}`
+  const endpoint = `/entities/${entityId}`
   try {
-    const result = await axios.get<Entity>(endpoint)
-    console.log(result)
+    const result = await instance().get<Entity>(endpoint)
     return result
   } catch (err) {
     console.log(err)
   }
+}
+
+export const getEntityStreamingUrl = (entityId: number) => {
+  const endpoint = `/entities/stream/${entityId}`
+  return `${hostname}${endpoint}`
+}
+
+export const getEntityThumbnailUrl = (entityId: number) => {
+  const endpoint = `/entities/thumbnail/${entityId}`
+  return `${hostname}${endpoint}`
 }
 
 export const deleteEntity = (entityId: string) => {}

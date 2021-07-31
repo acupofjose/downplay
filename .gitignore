@@ -3,3 +3,7 @@ build/
 docker/
 
 *.m4a
+
+storage/*
+!.gitkeep
+*.db3
