@@ -1,6 +1,6 @@
 import React from "react"
 import { FlexGrid, FlexGridItem } from "baseui/flex-grid"
-import { Entity, getEntities } from "../api"
+import { Entity, getEntities, getEntityThumbnailUrl } from "../api"
 import { Card, StyledAction, StyledBody } from "baseui/card"
 import { splitter } from "../util"
 import { Button } from "baseui/button"

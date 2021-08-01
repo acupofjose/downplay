@@ -1,53 +1,78 @@
 import React from "react"
-import ReactJkMusicPlayer, { ReactJkMusicPlayerAudioListProps, ReactJkMusicPlayerProps } from "react-jinke-music-player"
+import ReactJkMusicPlayer, {
+  ReactJkMusicPlayerAudioListProps,
+  ReactJkMusicPlayerInstance,
+  ReactJkMusicPlayerProps,
+} from "react-jinke-music-player"
 import "react-jinke-music-player/assets/index.css"
 import { Entity, getEntities, getEntityStreamingUrl, getEntityThumbnailUrl } from "../api"
 import { REFRESH_ENTITIES } from "../events"
 
-const MusicPlayer = () => {
-  const [entities, setEntities] = React.useState<Entity[]>([])
-  const [options, setOptions] = React.useState<ReactJkMusicPlayerProps>({
-    audioLists: [],
-    theme: "auto",
-    locale: "en_US",
-    preload: false,
-    remember: true,
-    mode: "mini",
-    drag: false,
-    defaultPosition: { bottom: 15, left: 15 },
-    quietUpdate: true,
-    defaultVolume: 1,
-  })
+type MusicPlayerState = {
+  entities: Entity[]
+  options: ReactJkMusicPlayerProps
+}
 
-  const refresh = async () => {
-    const result = await getEntities()
-    setEntities(result as Entity[])
+class MusicPlayer extends React.Component<any, MusicPlayerState> {
+  player: ReactJkMusicPlayerInstance | null = null
+
+  constructor(props: any) {
+    super(props)
+    this.state = {
+      entities: [],
+      options: {
+        audioLists: [],
+        getAudioInstance: (instance) => (this.player = instance),
+        theme: "auto",
+        locale: "en_US",
+        autoPlay: false,
+        defaultPlayIndex: 0,
+        preload: false,
+        mode: "full",
+        drag: false,
+        quietUpdate: true,
+        volumeFade: { fadeIn: 500, fadeOut: 500 },
+        showThemeSwitch: false,
+        showLyric: false,
+        defaultPosition: { bottom: 15, left: 15 },
+      },
+    }
   }
 
-  React.useEffect(() => {
-    const audioLists: ReactJkMusicPlayerAudioListProps[] = []
+  refresh = async () => {
+    const result = await getEntities()
+    this.setState({ ...this.state, entities: result as Entity[] })
+  }
 
-    for (const entity of entities) {
-      audioLists.push({
-        name: entity.title,
-        musicSrc: getEntityStreamingUrl(entity.id),
-        cover: getEntityThumbnailUrl(entity.id),
-        singer: entity.channel,
-      })
+  componentDidMount() {
+    PubSub.subscribe(REFRESH_ENTITIES, this.refresh)
+    this.refresh()
+  }
+
+  componentWillUnmount() {
+    PubSub.unsubscribe(this.refresh)
+  }
+
+  componentDidUpdate(prevProps: any, prevState: MusicPlayerState) {
+    if (prevState.entities != this.state.entities) {
+      const audioLists: ReactJkMusicPlayerAudioListProps[] = []
+
+      for (const entity of this.state.entities) {
+        audioLists.push({
+          name: entity.title,
+          musicSrc: getEntityStreamingUrl(entity.id),
+          cover: getEntityThumbnailUrl(entity.id),
+          singer: entity.channel,
+        })
+      }
+
+      this.setState({ ...this.state, options: { ...this.state.options, audioLists } })
     }
+  }
 
-    console.log(audioLists)
-
-    setOptions({ ...options, audioLists })
-  }, [entities])
-
-  React.useEffect(() => {
-    PubSub.subscribe(REFRESH_ENTITIES, refresh)
-    refresh()
-    return () => PubSub.unsubscribe(refresh)
-  }, [])
-
-  return <ReactJkMusicPlayer {...options} />
+  render() {
+    return <ReactJkMusicPlayer {...this.state.options} />
+  }
 }
 
 export default MusicPlayer
