@@ -2,7 +2,7 @@ FROM node:16-buster
 
 WORKDIR /app
 
-RUN apt update && apt install ffmpeg libavcodec-extra-53 -y
+RUN apt update && apt install ffmpeg libmp3lame-dev -y
 
 # Server
 COPY package.json .

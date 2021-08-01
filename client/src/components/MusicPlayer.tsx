@@ -14,13 +14,14 @@ const MusicPlayer = () => {
     remember: true,
     mode: "mini",
     drag: false,
-    defaultPosition: { bottom: 5, left: 5 },
+    defaultPosition: { bottom: 15, left: 15 },
     quietUpdate: true,
+    defaultVolume: 1,
   })
 
   const refresh = async () => {
     const result = await getEntities()
-    setEntities(result?.data as Entity[])
+    setEntities(result as Entity[])
   }
 
   React.useEffect(() => {

@@ -1,70 +1,124 @@
 import axios from "axios"
 import fs from "fs"
 import path from "path"
+import ffmpeg from "fluent-ffmpeg"
+import { promisify } from "util"
 import { parentPort, workerData } from "worker_threads"
 
 import { PrismaClient, Queue, Entity } from "@prisma/client"
 import { STORAGE_PATH } from "./constants"
 
-import {
-  EVENT_DOWNLOAD_COMPLETE,
-  EVENT_DOWNLOAD_ERROR,
-  EVENT_DOWNLOAD_PROGRESS,
-  Format,
-  YoutubedlResult,
-} from "./types"
+import { EVENT_DOWNLOAD_COMPLETE, EVENT_DOWNLOAD_ERROR, EVENT_DOWNLOAD_PROGRESS, YoutubedlResult } from "./types"
+import { ext } from "./util"
+
+type DownloadItem = { key: "audio" | "thumbnail"; url: string; path: string; entity: Entity }
+type ProgressCallback = (type: "audio" | "thumbnail" | "transcode", percent: number) => void
 
 // Flag for put a lock on the tick function
 let isProcessing = false
 const tickInterval = 5000
 const prisma = new PrismaClient()
+const unlink = promisify(fs.unlink)
 
 const log = (data: any) => console.log(`[${workerData.name}] ${data}`)
 const error = (data: any) => console.error(`[${workerData.name}] ${data}`)
 const getWorkerId = () => workerData.id
 
 // Download from a given entity and include access to progress callbacks
-function download(entity: Entity, onProgress: (chunkLength: number, totalLength: number) => void): Promise<void> {
+async function handleDownload(entity: Entity, onProgress: ProgressCallback): Promise<void> {
+  const downloads: DownloadItem[] = []
+
+  const outDir = path.join(STORAGE_PATH, entity.channel)
+  const title = entity.title.replace(/[^a-z0-9]/gi, "_")
+
+  if (!fs.existsSync(outDir)) {
+    log(`Directory ${outDir} does not exist, creating...`)
+    fs.mkdirSync(outDir)
+  }
+
+  // YoutubeDL provides incredible JSON files...
+  const json = JSON.parse(entity.JSON) as YoutubedlResult
+
+  // Pick a specific format to download
+  for (const format of json.formats) {
+    if (format.acodec.includes("mp4") && format.vcodec === "none" && format.quality === 0) {
+      downloads.push({ entity, key: "audio", url: format.url, path: path.join(outDir, `${title}.m4a`) })
+      break
+    }
+  }
+
+  // Thumbnail
+  downloads.push({
+    entity,
+    key: "thumbnail",
+    url: entity.thumbnailUrl,
+    path: path.join(outDir, `${title}${ext(entity.thumbnailUrl)}`),
+  })
+
+  for (const item of downloads) {
+    await download(item, onProgress)
+  }
+}
+
+function download(item: DownloadItem, onProgress: ProgressCallback): Promise<void> {
   return new Promise(async (resolve, reject) => {
-    const outDir = path.join(STORAGE_PATH, entity.channel)
-    const outPath = path.join(outDir, `${entity.title.replace(/[^a-zA-Z\d\s:]/g, "-")}.m4a`)
+    const { data, headers } = await axios({
+      url: item.url,
+      method: "GET",
+      responseType: "stream",
+    })
+    const totalLength = headers["content-length"]
 
-    if (!fs.existsSync(outDir)) {
-      log(`Directory ${outDir} does not exist, creating...`)
-      fs.mkdirSync(outDir)
-    }
+    log(`Creating write stream to ${item.path}`)
+    const writer = fs.createWriteStream(item.path)
 
-    // YoutubeDL provides incredible JSON files...
-    const json = JSON.parse(entity.JSON) as YoutubedlResult
-
-    // Pick a specific format to download
-    let format: Format | null = null
-    for (const item of json.formats) {
-      if (item.acodec.includes("mp4") && item.vcodec === "none" && item.quality === 0) {
-        format = item
+    switch (item.key) {
+      case "audio":
+        await prisma.entity.update({ where: { id: item.entity.id }, data: { path: item.path } })
         break
+      case "thumbnail":
+        await prisma.entity.update({ where: { id: item.entity.id }, data: { thumbnailPath: item.path } })
+        break
+    }
+
+    let cursor = 0
+    data.on("data", (chunk: any) => {
+      cursor += chunk.length
+      onProgress(item.key, +((cursor / totalLength) * 100).toFixed(2))
+    })
+    data.on("error", (err: any) => reject(err))
+    data.on("close", async () => {
+      if (item.key === "audio") {
+        await transcode(item, onProgress)
       }
-    }
+      resolve()
+    })
+    data.pipe(writer)
+  })
+}
 
-    if (format) {
-      const { data, headers } = await axios({
-        url: format.url,
-        method: "GET",
-        responseType: "stream",
+function transcode(item: DownloadItem, onProgress: ProgressCallback): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const stream = fs.createReadStream(item.path)
+    const newPath = item.path.replace(ext(item.path), ".mp3")
+
+    console.log(`Transcoding ${item.path} to ${newPath}`)
+
+    ffmpeg(stream)
+      .audioCodec("libmp3lame")
+      .audioQuality(0)
+      .audioFilters("silencedetect=n=-50dB:d=5")
+      .outputFormat("mp3")
+      .on("progress", (progress) => onProgress("transcode", progress.percent))
+      .on("error", (err) => reject(err))
+      .on("end", async () => {
+        console.log(`Transcoded ${newPath}`)
+        await prisma.entity.update({ where: { id: item.entity.id }, data: { path: newPath } })
+        await unlink(item.path)
+        resolve()
       })
-      const totalLength = headers["content-length"]
-
-      log(`Creating write stream to ${outPath}`)
-      const writer = fs.createWriteStream(outPath)
-      await prisma.entity.update({ where: { id: entity.id }, data: { path: outPath } })
-
-      data.on("data", (chunk: any) => onProgress(chunk.length, totalLength))
-      data.on("error", (err: any) => reject(err))
-      data.on("close", () => resolve())
-      data.pipe(writer)
-    } else {
-      error(`Unable to find applicable format`)
-    }
+      .output(newPath)
+      .run()
   })
 }
 
@@ -80,24 +134,21 @@ async function process(instance: Queue) {
       return
     }
 
-    let progress = 0
     // Create a handler for download progress callbacks that we can
     // then send to the client via websocket
-    const onDownloadProgress = (chunk: number, total: number) => {
-      progress += chunk
-
+    const onDownloadProgress = (type: "audio" | "thumbnail" | "transcode", percent: number) => {
       const msg = {
         event: EVENT_DOWNLOAD_PROGRESS,
+        type,
         entityId: instance?.entityId,
-        progress: +((progress / total) * 100).toFixed(2),
+        progress: percent,
       }
-
       parentPort?.postMessage(msg)
     }
 
     log(`Attempting to download ${entity?.title}`)
 
-    await download(entity, onDownloadProgress)
+    await handleDownload(entity, onDownloadProgress)
 
     // Remove lock on this file and mark as completed
     await prisma.queue.update({

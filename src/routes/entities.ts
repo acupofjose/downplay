@@ -1,10 +1,15 @@
+import * as util from "util"
 import * as fs from "fs"
 import { Router } from "express"
 import { PrismaClient } from "@prisma/client"
 import { ensureAuthenticated } from "./guards"
+import { ext } from "../util"
 
+const mime = require("mime/lite")
 const router = Router()
 const prisma = new PrismaClient()
+
+const stat = util.promisify(fs.stat)
 
 router.get("/", ensureAuthenticated, async (req, res, next) => {
   try {
@@ -37,6 +42,19 @@ router.get("/:id", ensureAuthenticated, async (req, res, next) => {
 router.get("/thumbnail/:id", async (req, res, next) => {
   const id = req.params.id
   if (!id) res.status(400).json({ error: ":id is required" })
+  const result = await prisma.entity.findFirst({
+    where: { id: parseInt(id) },
+    include: { queue: true },
+  })
+
+  if (result && result.thumbnailPath) {
+    const stats = await stat(result.thumbnailPath)
+    const total = stats.size
+    res.writeHead(200, { "Content-Length": total, "Content-Type": mime.getType(ext(result.thumbnailPath)) })
+    fs.createReadStream(result.thumbnailPath).pipe(res)
+  } else {
+    res.status(400).json({ error: `Could not find a thumbnail for entity with id ${id}` })
+  }
 })
 
 router.get("/stream/:id", async (req, res, next) => {
@@ -50,8 +68,8 @@ router.get("/stream/:id", async (req, res, next) => {
     })
 
     if (result && result.path) {
-      const stat = fs.statSync(result.path)
-      const total = stat.size
+      const stats = await stat(result.path)
+      const total = stats.size
 
       if (req.headers.range) {
         var range = req.headers.range
@@ -66,11 +84,11 @@ router.get("/stream/:id", async (req, res, next) => {
           "Content-Range": "bytes " + start + "-" + end + "/" + total,
           "Accept-Ranges": "bytes",
           "Content-Length": chunksize,
-          "Content-Type": "audio/mpeg",
+          "Content-Type": mime.getType(ext(result.path)),
         })
         readStream.pipe(res)
       } else {
-        res.writeHead(200, { "Content-Length": total, "Content-Type": "audio/mpeg" })
+        res.writeHead(200, { "Content-Length": total, "Content-Type": mime.getType(ext(result.path)) })
         fs.createReadStream(result.path).pipe(res)
       }
     } else {

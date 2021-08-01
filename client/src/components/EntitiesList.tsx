@@ -8,7 +8,9 @@ import { ProgressBar } from "baseui/progress-bar"
 import { REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "../events"
 import PubSub from "pubsub-js"
 
-class EntitiesList extends React.Component<any, { entities: Entity[]; progress: { [id: string]: number } }> {
+type EntitiesListProps = { entities: Entity[]; progress: { [id: string]: { type: string; progress: number } } }
+
+class EntitiesList extends React.Component<any, EntitiesListProps> {
   constructor(props: any) {
     super(props)
 
@@ -29,12 +31,15 @@ class EntitiesList extends React.Component<any, { entities: Entity[]; progress: 
     PubSub.unsubscribe(this.refresh)
   }
 
-  handleWebsocketMessage = (event: string, data: { event: string; entityId?: number; progress?: number }) => {
+  handleWebsocketMessage = (
+    event: string,
+    data: { event: string; type: string; entityId?: number; progress?: number }
+  ) => {
     if (data.event && data.entityId && data.progress) {
       const progress = { ...this.state.progress }
 
       const key = data.entityId.toString()
-      progress[key] = data.progress
+      progress[key] = { type: data.type, progress: data.progress }
 
       this.setState({ ...this.state, progress })
     }
@@ -42,8 +47,8 @@ class EntitiesList extends React.Component<any, { entities: Entity[]; progress: 
 
   refresh = async () => {
     const result = await getEntities()
-    if (result?.data) {
-      this.setState({ entities: result.data })
+    if (result) {
+      this.setState({ entities: result })
     }
   }
 
@@ -74,11 +79,17 @@ class EntitiesList extends React.Component<any, { entities: Entity[]; progress: 
                 <p>{splitter(entity.description, 128)[0]}</p>
               </StyledBody>
               <StyledAction>
-                {(entity.queue.completedAt || this.state.progress[entity.id] === 100) && (
+                {(entity.queue.completedAt || this.state.progress[entity.id].progress === 100) && (
                   <Button overrides={{ BaseButton: { style: { width: "100%" } } }}>Listen</Button>
                 )}
-                {!entity.queue.completedAt && this.state.progress[entity.id] !== 100 && (
-                  <ProgressBar size="large" value={this.state.progress[entity.id] || 0} successValue={100} />
+                {!entity.queue.completedAt && this.state.progress[entity.id].progress !== 100 && (
+                  <ProgressBar
+                    size="large"
+                    value={this.state.progress[entity.id].progress || 0}
+                    successValue={100}
+                    showLabel={true}
+                    getProgressLabel={() => this.state.progress[entity.id].type}
+                  />
                 )}
               </StyledAction>
             </Card>

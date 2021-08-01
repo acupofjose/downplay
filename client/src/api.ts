@@ -5,7 +5,7 @@ let hostname = ""
 if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
   hostname = `http://localhost:3000`
 } else {
-  hostname = `${window.location.protocol}//${window.location.hostname}`
+  hostname = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
 }
 
 const getLocalStorageState = (key: string = LOCAL_STORAGE_KEY): IAppContext | null => {
@@ -86,13 +86,14 @@ export const enqueue = async (youtubeUrl: string, audioOnly: boolean = true) => 
 
 export const getQueue = () => {}
 
-export const getEntities = async () => {
+export const getEntities = async (): Promise<Entity[]> => {
   const endpoint = `/entities`
   try {
     const result = await instance().get<Entity[]>(endpoint)
-    return result
+    return result.data
   } catch (err) {
     console.log(err)
+    return []
   }
 }
 
@@ -103,6 +104,7 @@ export const getEntity = async (entityId: string) => {
     return result
   } catch (err) {
     console.log(err)
+    return null
   }
 }
 

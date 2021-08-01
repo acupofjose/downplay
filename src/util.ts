@@ -9,3 +9,7 @@ export const compare = async (input: string, expected: string) => {
   const result = await bcrypt.compare(Buffer.from(input).toString("base64"), expected)
   return result
 }
+
+export const ext = (url: string) => {
+  return (url = url.substr(1 + url.lastIndexOf("/")).split("?")[0]).split("#")[0].substr(url.lastIndexOf("."))
+}
