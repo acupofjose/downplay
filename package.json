@@ -7,7 +7,8 @@
     "start": "npm run build && npm --prefix ./client run build && node .",
     "build": "npx tsc && cp src/worker-loader.js build/worker-loader.js",
     "dev": "concurrently \"nodemon\" \"npm --prefix ./client run dev\"",
-    "generate:schema": "npx prisma generate && npx prisma db push"
+    "generate:schema": "npx prisma generate && npx prisma db push",
+    "generate:docs": "typedoc src/server.ts"
   },
   "nodemonConfig": {
     "ext": "ts,js",

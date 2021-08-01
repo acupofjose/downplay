@@ -71,10 +71,10 @@ const LoginPage = () => {
         </Notification>
       )}
       <FormControl label={"Username"}>
-        <Input onChange={(e) => setUsername(e.currentTarget.value)} />
+        <Input name="username" onChange={(e) => setUsername(e.currentTarget.value)} />
       </FormControl>
       <FormControl label={"Password"}>
-        <Input onChange={(e) => setPassword(e.currentTarget.value)} />
+        <Input name="password" type="password" onChange={(e) => setPassword(e.currentTarget.value)} />
       </FormControl>
       <div className={css({ display: "flex", flexDirection: "column", alignItems: "center" })}>
         <ButtonGroup size={SIZE.large} shape={SHAPE.default}>

@@ -140,6 +140,7 @@ async function process(instance: Queue) {
       const msg = {
         event: EVENT_DOWNLOAD_PROGRESS,
         type,
+        userId: instance.userId,
         entityId: instance?.entityId,
         progress: percent,
       }
@@ -158,6 +159,7 @@ async function process(instance: Queue) {
 
     parentPort?.postMessage({
       event: EVENT_DOWNLOAD_COMPLETE,
+      userId: instance.userId,
       entityId: instance.entityId,
     })
 

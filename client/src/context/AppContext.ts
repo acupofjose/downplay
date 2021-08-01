@@ -6,9 +6,11 @@ export interface IAppContext {
   token: string | null
 }
 
-const AppContext = React.createContext<IAppContext>({
+export const DEFAULT_VALUE = {
   token: "",
-})
+}
+
+const AppContext = React.createContext<IAppContext>(DEFAULT_VALUE)
 
 export const useAppContext = () => React.useContext(AppContext)
 

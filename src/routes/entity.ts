@@ -10,7 +10,12 @@ const router = Router()
 const prisma = new PrismaClient()
 
 const stat = util.promisify(fs.stat)
+const unlink = util.promisify(fs.unlink)
+const exists = util.promisify(fs.exists)
 
+/**
+ * Returns all of the entities for a given user
+ */
 router.get("/", ensureAuthenticated, async (req, res, next) => {
   try {
     const result = await prisma.entity.findMany({
@@ -24,13 +29,16 @@ router.get("/", ensureAuthenticated, async (req, res, next) => {
   }
 })
 
+/**
+ * Returns a specific entity given an :id
+ */
 router.get("/:id", ensureAuthenticated, async (req, res, next) => {
   try {
     const id = req.params.id
     if (!id) res.status(400).json({ error: ":id is required" })
 
     const result = await prisma.entity.findFirst({
-      where: { id: parseInt(id), userId: (req.user as any)._id },
+      where: { id, userId: (req.user as any)._id },
       include: { queue: true },
     })
     res.json(result)
@@ -39,11 +47,45 @@ router.get("/:id", ensureAuthenticated, async (req, res, next) => {
   }
 })
 
+/**
+ * Deletes an entity with a given :id
+ */
+router.post("/delete/:id", ensureAuthenticated, async (req, res, next) => {
+  try {
+    const id = req.params.id
+    if (!id) return res.status(400).json({ error: ":id is required" })
+
+    const entity = await prisma.entity.findFirst({
+      where: { id, userId: (req.user as any)._id },
+      include: { queue: true },
+    })
+
+    if (!entity) return res.status(400).json({ error: "Unknown entity" })
+
+    if (entity.thumbnailPath && (await exists(entity.thumbnailPath))) {
+      await unlink(entity.thumbnailPath)
+    }
+
+    if (entity.path && (await exists(entity.path))) {
+      await unlink(entity.path)
+    }
+
+    await prisma.entity.delete({ where: { id }, include: { queue: true } })
+
+    return res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err })
+  }
+})
+
+/**
+ * Streams a thumbnail for a given :id to the browser
+ */
 router.get("/thumbnail/:id", async (req, res, next) => {
   const id = req.params.id
   if (!id) res.status(400).json({ error: ":id is required" })
   const result = await prisma.entity.findFirst({
-    where: { id: parseInt(id) },
+    where: { id },
     include: { queue: true },
   })
 
@@ -57,13 +99,16 @@ router.get("/thumbnail/:id", async (req, res, next) => {
   }
 })
 
+/**
+ * Streams an mp3 (with seek capabilities) to the browser
+ */
 router.get("/stream/:id", async (req, res, next) => {
   try {
     const id = req.params.id
     if (!id) res.status(400).json({ error: ":id is required" })
 
     const result = await prisma.entity.findFirst({
-      where: { id: parseInt(id) },
+      where: { id },
       include: { queue: true },
     })
 
@@ -99,7 +144,5 @@ router.get("/stream/:id", async (req, res, next) => {
     res.status(500).json({ error: err })
   }
 })
-
-router.get("/delete/:id", (req, res, next) => {})
 
 export default router

@@ -1,5 +1,13 @@
+import { Entity as PrismaEntity, Queue as PrismaQueue } from "@prisma/client"
 import axios from "axios"
 import { IAppContext, LOCAL_STORAGE_KEY } from "./context/AppContext"
+
+export interface Entity extends PrismaEntity {
+  queue: Queue
+}
+export interface Queue extends PrismaQueue {
+  entity: Entity
+}
 
 let hostname = ""
 if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
@@ -27,30 +35,6 @@ const instance = () => {
     baseURL: hostname,
     headers: { Authorization: `Bearer ${context?.token}` },
   })
-}
-
-export interface Entity {
-  id: number
-  feedId?: any
-  title: string
-  description: string
-  channel: string
-  filename: string
-  path: string
-  originalUrl: string
-  downloadUrl: string
-  createdAt: Date
-  queue: Queue
-}
-
-export interface Queue {
-  id: number
-  entityId: number
-  isRunning: boolean
-  hasErrored: boolean
-  errorCount: number
-  createdAt: Date
-  completedAt: Date
 }
 
 export const login = async (username: string, password: string) => {
@@ -87,7 +71,7 @@ export const enqueue = async (youtubeUrl: string, audioOnly: boolean = true) => 
 export const getQueue = () => {}
 
 export const getEntities = async (): Promise<Entity[]> => {
-  const endpoint = `/entities`
+  const endpoint = `/entity`
   try {
     const result = await instance().get<Entity[]>(endpoint)
     return result.data
@@ -98,7 +82,7 @@ export const getEntities = async (): Promise<Entity[]> => {
 }
 
 export const getEntity = async (entityId: string) => {
-  const endpoint = `/entities/${entityId}`
+  const endpoint = `/entity/${entityId}`
   try {
     const result = await instance().get<Entity>(endpoint)
     return result
@@ -108,14 +92,23 @@ export const getEntity = async (entityId: string) => {
   }
 }
 
-export const getEntityStreamingUrl = (entityId: number) => {
-  const endpoint = `/entities/stream/${entityId}`
+export const deleteEntity = async (entityId: string) => {
+  const endpoint = `/entity/delete/${entityId}`
+  try {
+    const result = await instance().post(endpoint)
+    return result.status
+  } catch (err) {
+    console.log(err)
+    return null
+  }
+}
+
+export const getEntityStreamingUrl = (entityId: string) => {
+  const endpoint = `/entity/stream/${entityId}`
   return `${hostname}${endpoint}`
 }
 
-export const getEntityThumbnailUrl = (entityId: number) => {
-  const endpoint = `/entities/thumbnail/${entityId}`
+export const getEntityThumbnailUrl = (entityId: string) => {
+  const endpoint = `/entity/thumbnail/${entityId}`
   return `${hostname}${endpoint}`
 }
-
-export const deleteEntity = (entityId: string) => {}

@@ -19,6 +19,15 @@ const firstRunMigration = async () => {
     },
   })
 
+  await prisma.feed.create({
+    data: {
+      userId: user.id,
+      title: "Default Feed",
+      description: "Percetta's default feed",
+      isDefault: true,
+    },
+  })
+
   if (!user) throw new Error("Unable to create default user, does the database exist?")
 
   await prisma.meta.upsert({

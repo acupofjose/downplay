@@ -7,12 +7,15 @@ const prisma = new PrismaClient()
 
 const getSiteUrl = (req: any) => req.protocol + "://" + req.get("host")
 
+/**
+ * Returns a podcast feed for a given feed :id
+ */
 router.get("/:id", async (req, res, next) => {
   const id = req.params.id
   if (!id) return res.status(400).json({ error: "`id` is required" })
 
   const feed = await prisma.feed.findFirst({
-    where: { id: parseInt(id) },
+    where: { id },
     include: { entities: true },
   })
 

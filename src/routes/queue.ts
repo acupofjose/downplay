@@ -18,8 +18,16 @@ const readdir = util.promisify(fs.readdir)
 const readfile = util.promisify(fs.readFile)
 const unlink = util.promisify(fs.unlink)
 
+/**
+ * Inserts an item into the queue for the Workers to pick up.
+ *
+ * This process requires downloading the youtube-dl json files, parsing them, and inserting them into
+ * the database.
+ *
+ * This endpoint supports (at the moment) single youtube videos and youtube playlists
+ */
 router.post("/", ensureAuthenticated, async (req, res, next) => {
-  const { url, audioOnly, feedId } = req.body
+  const { url, feedId } = req.body
   const results: Queue[] = []
 
   if (!url) res.status(400).json({ message: "Request must include `url`" })
@@ -61,7 +69,7 @@ router.post("/", ensureAuthenticated, async (req, res, next) => {
 
         const entity = await prisma.entity.create({
           data: {
-            userId: 1,
+            userId: (req.user as any)?._id,
             title: json.title,
             feedId: feed?.id,
             description: json.description,
@@ -89,7 +97,61 @@ router.post("/", ensureAuthenticated, async (req, res, next) => {
   }
 })
 
-router.get("/get/:id", (req, res, next) => {})
-router.get("/delete/:id", (req, res, next) => {})
+/**
+ * Returns all queue items for a given user
+ */
+router.get("/", ensureAuthenticated, async (req, res, next) => {
+  try {
+    const result = await prisma.queue.findMany({
+      where: { userId: (req.user as any)._id },
+      orderBy: { createdAt: "desc" },
+      include: { entity: true },
+    })
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err })
+  }
+})
+
+/**
+ * Returns a specific queue item for a given user
+ */
+router.get("/:id", ensureAuthenticated, async (req, res, next) => {
+  try {
+    const id = req.params.id
+    if (!id) res.status(400).json({ error: ":id is required" })
+
+    const result = await prisma.entity.findFirst({
+      where: { id, userId: (req.user as any)._id },
+      include: { queue: true },
+    })
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err })
+  }
+})
+
+/**
+ * Deletes a queue item given an :id
+ */
+router.post("/delete/:id", ensureAuthenticated, async (req, res, next) => {
+  try {
+    const id = req.params.id
+    if (!id) return res.status(400).json({ error: ":id is required" })
+
+    const entity = await prisma.queue.findFirst({
+      where: { id, userId: (req.user as any)._id },
+      include: { entity: true },
+    })
+
+    if (!entity) return res.status(400).json({ error: "Unknown entity" })
+
+    await prisma.queue.delete({ where: { id }, include: { entity: true } })
+
+    return res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err })
+  }
+})
 
 export default router

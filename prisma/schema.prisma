@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgres"
   url      = env("DATABASE_URL")
 }
 
@@ -11,8 +11,8 @@ generator client {
 }
 
 model Feed {
-  id Int @id @default(autoincrement())
-  userId Int
+  id String @id @default(uuid())
+  userId String
   user User @relation(fields: [userId], references: [id]) 
   title String
   author String @default("Percetta")
@@ -23,10 +23,10 @@ model Feed {
 }
 
 model Entity {
-  id  Int @id @default(autoincrement())
-  userId Int
+  id String @id @default(uuid())
+  userId String
   user User @relation(fields: [userId], references: [id]) 
-  feedId Int?
+  feedId String?
   feed  Feed? @relation(fields: [feedId], references: [id])
   title String
   description String
@@ -42,12 +42,12 @@ model Entity {
 }
 
 model Queue {
-  id Int @id @default(autoincrement())
-  userId Int
+  id String @id @default(uuid())
+  userId String
   user User @relation(fields: [userId], references: [id]) 
   workerId String?
   entity Entity @relation(fields: [entityId], references: [id])
-  entityId Int
+  entityId String
   isRunning Boolean @default(false)
   hasErrored Boolean @default(false)
   errorCount Int @default(0)
@@ -56,7 +56,7 @@ model Queue {
 }
 
 model User {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
   username String @unique
   password String
   

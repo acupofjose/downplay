@@ -1,5 +1,5 @@
 import React from "react"
-import { Route, Switch, useHistory } from "react-router-dom"
+import { Route, Switch, useHistory, withRouter } from "react-router-dom"
 
 import { Provider as StyletronProvider } from "styletron-react"
 import { Client as Styletron } from "styletron-engine-atomic"
@@ -8,82 +8,111 @@ import { DarkTheme, BaseProvider } from "baseui"
 import { AUTH_LOGIN, AUTH_REGISTER, REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "./events"
 import Navbar from "./components/Navbar"
 import IndexPage from "./pages/IndexPage"
-import AppContext, { IAppContext, LOCAL_STORAGE_KEY } from "./context/AppContext"
+import AppContext, { IAppContext, LOCAL_STORAGE_KEY, DEFAULT_VALUE } from "./context/AppContext"
 import PrivateRoute from "./components/PrivateRoute"
 import LoginPage from "./pages/LoginPage"
-import { useLocalStorage } from "./hooks/useLocalStorage"
 import MusicPlayer from "./components/MusicPlayer"
 
 const engine = new Styletron()
 
-function App() {
-  let socket: WebSocket | null = null
+interface AppState {
+  global: IAppContext
+  isLoaded: boolean
+}
 
-  const history = useHistory()
-  const [state, setState] = useLocalStorage<IAppContext>(LOCAL_STORAGE_KEY, {
-    token: "",
-  })
+class App extends React.Component<any, AppState> {
+  socket: WebSocket | null = null
 
-  const handleLoginOrRegisterEvent = (e: string, token: string) => {
-    setState({ ...state, token })
-    console.log(history)
-    history.push("/")
+  constructor(props: any) {
+    super(props)
+    this.state = {
+      global: this.getPersisted(),
+      isLoaded: false,
+    }
   }
 
-  const connect = () => {
-    if (socket) return
+  getPersisted = () => {
+    try {
+      return JSON.parse(window.localStorage.getItem(LOCAL_STORAGE_KEY) || "")
+    } catch {
+      return DEFAULT_VALUE
+    }
+  }
+
+  setState(state: AppState) {
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.global))
+    super.setState(state)
+  }
+
+  componentDidMount() {
+    console.log(this.state)
+
+    PubSub.subscribe(AUTH_LOGIN, this.handleLoginOrRegisterEvent)
+    PubSub.subscribe(AUTH_REGISTER, this.handleLoginOrRegisterEvent)
+
+    if (this.state.global.token) {
+      this.connect()
+    }
+  }
+
+  componentWillUnmount() {
+    PubSub.unsubscribe(this.handleLoginOrRegisterEvent)
+    this.socket?.close()
+  }
+
+  handleLoginOrRegisterEvent = (e: string, token: string) => {
+    this.setState({ ...this.state, global: { ...this.state.global, token } })
+    this.props.history.push("/")
+    this.connect()
+  }
+
+  connect = () => {
+    if (this.socket && !this.socket.CLOSED) return
 
     //const origin = window.location.origin
     const origin = "http://localhost:3000"
     const url = origin.includes("https") ? origin.replace("https", "wss") : origin.replace("http", "ws")
-    socket = new WebSocket(url)
-    socket.onopen = () => {
+    const endpoint = `${url}?token=${this.state.global.token}`
+
+    this.socket = new WebSocket(endpoint)
+    this.socket.onopen = () => {
       PubSub.publish(WEBSOCKET_OPEN)
       PubSub.publish(REFRESH_ENTITIES)
       console.log(`Connection opened to: ${url}`)
     }
 
-    socket.onmessage = (message) => {
+    this.socket.onmessage = (message) => {
       const json = JSON.parse(message.data)
       PubSub.publish(WEBSOCKET_MESSAGE, json)
     }
 
-    socket.onerror = (err) => console.error(err)
-    socket.onclose = (ev) => {
+    this.socket.onerror = (err) => console.error(err)
+    this.socket.onclose = (ev) => {
       console.log(`Connection closed, attempting to reconnection.`)
-      setTimeout(connect, 3000)
+      setTimeout(() => this.connect(), 3000)
     }
   }
 
-  React.useEffect(() => {
-    console.log("Mounted")
-    connect()
-    PubSub.subscribe(AUTH_LOGIN, handleLoginOrRegisterEvent)
-    PubSub.subscribe(AUTH_REGISTER, handleLoginOrRegisterEvent)
-    return () => {
-      PubSub.unsubscribe(handleLoginOrRegisterEvent)
-      socket?.close()
-    }
-  }, [])
-
-  return (
-    <AppContext.Provider value={state}>
-      <StyletronProvider value={engine}>
-        <BaseProvider theme={DarkTheme}>
-          <Navbar />
-          <Switch>
-            <Route path="/login" exact={true}>
-              <LoginPage />
-            </Route>
-            <PrivateRoute>
-              <IndexPage />
-            </PrivateRoute>
-          </Switch>
-          {state.token && <MusicPlayer />}
-        </BaseProvider>
-      </StyletronProvider>
-    </AppContext.Provider>
-  )
+  render() {
+    return (
+      <AppContext.Provider value={this.state.global}>
+        <StyletronProvider value={engine}>
+          <BaseProvider theme={DarkTheme}>
+            <Navbar />
+            <Switch>
+              <Route path="/login" exact={true}>
+                <LoginPage />
+              </Route>
+              <PrivateRoute>
+                <IndexPage />
+              </PrivateRoute>
+            </Switch>
+            {this.state.global?.token && <MusicPlayer />}
+          </BaseProvider>
+        </StyletronProvider>
+      </AppContext.Provider>
+    )
+  }
 }
 
-export default App
+export default withRouter(App)

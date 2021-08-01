@@ -5,7 +5,7 @@ import { Card, StyledAction, StyledBody } from "baseui/card"
 import { splitter } from "../util"
 import { Button } from "baseui/button"
 import { ProgressBar } from "baseui/progress-bar"
-import { REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "../events"
+import { PLAY_ENTITY, REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "../events"
 import PubSub from "pubsub-js"
 import { Block } from "baseui/block"
 
@@ -57,10 +57,17 @@ class EntitiesList extends React.Component<any, EntitiesListProps> {
     }
   }
 
+  emitPlayEntity = (entityId: string) => {
+    PubSub.publish(PLAY_ENTITY, entityId)
+  }
+
   render() {
     return (
       <Block margin="10px">
-        <FlexGrid flexGridColumnCount={[1, 1, 2, 5]} flexGridColumnGap="scale800" flexGridRowGap="scale800">
+        <FlexGrid
+          flexGridColumnCount={this.state.entities.length > 0 ? [1, 1, 2, 5] : [1]}
+          flexGridColumnGap="scale800"
+          flexGridRowGap="scale800">
           {this.state.entities.length === 0 && (
             <FlexGridItem
               overrides={{
@@ -83,7 +90,11 @@ class EntitiesList extends React.Component<any, EntitiesListProps> {
                 </StyledBody>
                 <StyledAction>
                   {(entity.queue.completedAt || this.state.progress[entity.id] === 100) && (
-                    <Button overrides={{ BaseButton: { style: { width: "100%" } } }}>Listen</Button>
+                    <Button
+                      overrides={{ BaseButton: { style: { width: "100%" } } }}
+                      onClick={() => this.emitPlayEntity(entity.id)}>
+                      Listen
+                    </Button>
                   )}
                   {!entity.queue.completedAt && this.state.progress[entity.id] !== 100 && (
                     <ProgressBar

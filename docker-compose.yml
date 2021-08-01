@@ -3,7 +3,32 @@ version: "3.3"
 services:
   percetta:
     build: .
+    restart: unless-stopped
+    depends_on:
+      - db
     ports:
       - 3000:3000
     volumes:
       - ./storage:/app/storage
+    environment:
+      - DATABASE_URL="postgresql://postgres:password@db:5432/percetta"
+
+  db:
+    image: postgres:13
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: percetta
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 2s
+      retries: 10
+
+volumes:
+  db_data:

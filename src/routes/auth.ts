@@ -10,6 +10,9 @@ const prisma = new PrismaClient()
 
 passport.use(jwtStrategy)
 
+/**
+ * Logs in a user and returns a JWT
+ */
 router.post("/login", async (req, res, next) => {
   passport.authenticate(localLoginStrategy, { session: false }, (err, user: User, info) => {
     try {
@@ -33,6 +36,9 @@ router.post("/login", async (req, res, next) => {
   })(req, res, next)
 })
 
+/**
+ * Registers a user and returns a JWT
+ */
 router.post("/register", passport.authenticate(localRegisterStrategy, { session: false }), async (req, res, next) => {
   if (!req.user) return res.status(500).json({ error: "User has not been assigned to internal parameters." })
 
