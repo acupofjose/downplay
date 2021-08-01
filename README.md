@@ -1,6 +1,6 @@
 # Downplay
 
-### A self-hosted podcast feed generator for YouTube videos
+#### A free, self-hostable, youtube-as-a-podcast service.
 
 Goals:
 
@@ -20,26 +20,26 @@ Goals:
 - [ ] CRUD Operations
 - [ ] Settings management from client
 
-# API
+## API
 
-## POST `auth/login`
+**POST `auth/login`**
 
-## POST `auth/register`
+**POST `auth/register`**
 
-## GET `entity`
+**GET `entity`**
 
-## GET `entity/:id`
+**GET `entity/:id`**
 
-## GET `entity/stream/:id`
+**GET `entity/stream/:id`**
 
-## GET `entity/thumbnail/:id`
+**GET `entity/thumbnail/:id`**
 
-## POST `entity/delete/:id`
+**POST `entity/delete/:id`**
 
-## POST `queue`
+**POST `queue`**
 
-## GET `queue`
+**GET `queue`**
 
-## GET `queue/:id`
+**GET `queue/:id`**
 
-## POST `queue/delete/:id`
+**POST `queue/delete/:id`**
