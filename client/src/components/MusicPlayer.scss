@@ -1,5 +1,4 @@
 $border-radius: 20px;
-
 $primary: #ff4c29;
 $base: #2c394b;
 $shadow-color: #334756;
@@ -16,8 +15,8 @@ $transition: 0.3s all ease;
   left: 0;
   right: 0;
 
-  height: 80px;
-  background: #000;
+  height: 100px;
+  background: rgba($base, 0.95);
 
   .wrapper {
     display: flex;
@@ -84,12 +83,14 @@ $transition: 0.3s all ease;
     width: 60px;
     height: 60px;
     border-radius: 100%;
+    background-color: $shadow-color;
     background-attachment: scroll;
     background-position: center;
     background-size: 100px;
     background-clip: border-box;
     background-repeat: no-repeat;
     background-origin: padding-box;
+    border: 5px solid rgba($white, 0.95);
   }
 
   #timeline {
@@ -158,6 +159,32 @@ $transition: 0.3s all ease;
         border-left: 8px solid transparent;
         border-right: 8px solid transparent;
       }
+    }
+  }
+
+  @media screen and (max-width: 700px) {
+    height: 80px;
+
+    .track-meta {
+      display: none;
+    }
+
+    .track-info {
+      max-width: 100%;
+    }
+
+    .song-img {
+      min-width: 60px;
+      margin-left: 1rem;
+    }
+
+    .controls {
+      button:nth-child(1),
+      button:nth-child(3) {
+        display: none;
+      }
+
+      margin-right: 1rem;
     }
   }
 }

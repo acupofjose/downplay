@@ -108,6 +108,12 @@ export const getEntityStreamingUrl = (entityId: string) => {
   return `${hostname}${endpoint}`
 }
 
+export const doesEntityThumbnailExist = async (entityId: string) => {
+  const url = getEntityThumbnailUrl(entityId)
+  const result = await instance().head(url)
+  return result.status === 200
+}
+
 export const getEntityThumbnailUrl = (entityId: string) => {
   const endpoint = `/entity/thumbnail/${entityId}`
   return `${hostname}${endpoint}`

@@ -12,6 +12,9 @@ import AppContext, { IAppContext, LOCAL_STORAGE_KEY, DEFAULT_VALUE } from "./con
 import PrivateRoute from "./components/PrivateRoute"
 import LoginPage from "./pages/LoginPage"
 import MusicPlayer from "./components/MusicPlayer"
+import FeedPage from "./pages/FeedPage"
+import SettingsPage from "./pages/SettingsPage"
+import { getEntities } from "./api"
 
 const engine = new Styletron()
 
@@ -45,18 +48,19 @@ class App extends React.Component<any, AppState> {
   }
 
   componentDidMount() {
-    console.log(this.state)
-
     PubSub.subscribe(AUTH_LOGIN, this.handleLoginOrRegisterEvent)
     PubSub.subscribe(AUTH_REGISTER, this.handleLoginOrRegisterEvent)
+    PubSub.subscribe(REFRESH_ENTITIES, this.refreshEntities)
 
     if (this.state.global.token) {
       this.connect()
+      this.refreshEntities()
     }
   }
 
   componentWillUnmount() {
     PubSub.unsubscribe(this.handleLoginOrRegisterEvent)
+    PubSub.unsubscribe(this.refreshEntities)
     this.socket?.close()
   }
 
@@ -64,6 +68,13 @@ class App extends React.Component<any, AppState> {
     this.setState({ ...this.state, global: { ...this.state.global, token } })
     this.props.history.push("/")
     this.connect()
+  }
+
+  refreshEntities = async () => {
+    const entities = await getEntities()
+    if (entities) {
+      this.setState({ ...this.state, global: { ...this.state.global, entities: entities } })
+    }
   }
 
   connect = () => {
@@ -103,11 +114,16 @@ class App extends React.Component<any, AppState> {
               <Route path="/login" exact={true}>
                 <LoginPage />
               </Route>
-              <PrivateRoute>
+              <PrivateRoute path="/feeds" exact={true}>
+                <FeedPage />
+              </PrivateRoute>
+              <PrivateRoute path="/settings" exact={true}>
+                <SettingsPage />
+              </PrivateRoute>
+              <PrivateRoute path="/">
                 <IndexPage />
               </PrivateRoute>
             </Switch>
-            {this.state.global?.token && <MusicPlayer />}
           </BaseProvider>
         </StyletronProvider>
       </AppContext.Provider>

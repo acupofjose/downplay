@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken"
 
 import passport from "passport"
 import { jwtStrategy, localLoginStrategy, localRegisterStrategy } from "../passport"
+import { ensureAuthenticated } from "./guards"
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -62,5 +63,7 @@ router.post("/register", passport.authenticate(localRegisterStrategy, { session:
     return res.json({ token })
   })
 })
+
+router.post("/update", ensureAuthenticated, (req, res, next) => {})
 
 export default router

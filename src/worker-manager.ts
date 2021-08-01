@@ -42,7 +42,7 @@ class WorkerManager {
           setTimeout(() => {
             this.spawn()
             resolve()
-          }, 1500 * i)
+          }, 2000 * i)
         })
       )
     }

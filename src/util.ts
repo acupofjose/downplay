@@ -1,4 +1,5 @@
 import * as bcrypt from "bcrypt"
+import { Stream } from "stream"
 
 export const hash = async (password: string, rounds: number = 12) => {
   const result = await bcrypt.hash(Buffer.from(password).toString("base64"), rounds)
@@ -22,4 +23,14 @@ export const getQueryJsonFromUrl = (url: string) => {
     result[item[0]] = decodeURIComponent(item[1])
   })
   return result
+}
+
+export const stream2buffer = async (stream: Stream): Promise<Buffer> => {
+  return new Promise<Buffer>((resolve, reject) => {
+    const _buf = Array<any>()
+
+    stream.on("data", (chunk) => _buf.push(chunk))
+    stream.on("end", () => resolve(Buffer.concat(_buf)))
+    stream.on("error", (err) => reject(`error converting stream - ${err}`))
+  })
 }

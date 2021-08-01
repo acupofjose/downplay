@@ -62,18 +62,24 @@ router.post("/delete/:id", ensureAuthenticated, async (req, res, next) => {
 
     if (!entity) return res.status(400).json({ error: "Unknown entity" })
 
-    if (entity.thumbnailPath && (await exists(entity.thumbnailPath))) {
-      await unlink(entity.thumbnailPath)
-    }
+    try {
+      if (entity.thumbnailPath && (await exists(entity.thumbnailPath))) {
+        await unlink(entity.thumbnailPath)
+      }
 
-    if (entity.path && (await exists(entity.path))) {
-      await unlink(entity.path)
-    }
+      if (entity.path && (await exists(entity.path))) {
+        await unlink(entity.path)
+      }
+    } catch {}
 
-    await prisma.entity.delete({ where: { id }, include: { queue: true } })
+    const deleteQueue = prisma.queue.delete({ where: { id: entity.queue?.id } })
+    const deleteEntity = prisma.entity.delete({ where: { id } })
+
+    await prisma.$transaction([deleteEntity, deleteQueue])
 
     return res.json({ success: true })
   } catch (err) {
+    console.error(err)
     res.status(500).json({ error: err })
   }
 })

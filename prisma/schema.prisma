@@ -12,7 +12,7 @@ generator client {
 
 model Feed {
   id String @id @default(uuid())
-  userId String
+  userId String @map("user")
   user User @relation(fields: [userId], references: [id]) 
   title String
   author String @default("Downplay")
@@ -24,9 +24,9 @@ model Feed {
 
 model Entity {
   id String @id @default(uuid())
-  userId String
+  userId String @map("user")
   user User @relation(fields: [userId], references: [id]) 
-  feedId String?
+  feedId String? @map("feed")
   feed  Feed? @relation(fields: [feedId], references: [id])
   title String
   description String
@@ -37,17 +37,18 @@ model Entity {
   thumbnailPath String?
   codec String?
   queue Queue?
+  queueId String? @map("queue")
   createdAt DateTime @default(now())
   JSON String
 }
 
 model Queue {
   id String @id @default(uuid())
-  userId String
+  userId String @map("user")
   user User @relation(fields: [userId], references: [id]) 
   workerId String?
   entity Entity @relation(fields: [entityId], references: [id])
-  entityId String
+  entityId String @map("entity")
   isRunning Boolean @default(false)
   hasErrored Boolean @default(false)
   errorCount Int @default(0)
@@ -60,6 +61,8 @@ model User {
   username String @unique
   password String
   
+  isAdmin Boolean @default(false)
+
   feeds Feed[]
   entities Entity[]
   queueItems Queue[]

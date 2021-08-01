@@ -20,6 +20,8 @@ Goals:
 - [ ] CRUD Operations
 - [ ] Settings management from client
 
+## Getting Started
+
 ## API
 
 **POST `auth/login`**
