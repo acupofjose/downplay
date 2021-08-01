@@ -26,9 +26,8 @@ class MusicPlayer extends React.Component<any, MusicPlayerState> {
         theme: "auto",
         locale: "en_US",
         autoPlay: false,
-        defaultPlayIndex: 0,
         preload: false,
-        mode: "full",
+        mode: "mini",
         drag: false,
         quietUpdate: true,
         volumeFade: { fadeIn: 500, fadeOut: 500 },
@@ -41,7 +40,7 @@ class MusicPlayer extends React.Component<any, MusicPlayerState> {
 
   refresh = async () => {
     const result = await getEntities()
-    this.setState({ ...this.state, entities: result as Entity[] })
+    this.setState({ ...this.state, entities: (result as Entity[]).filter((e) => e.queue?.createdAt !== null) })
   }
 
   componentDidMount() {

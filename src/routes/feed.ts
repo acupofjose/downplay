@@ -12,7 +12,7 @@ router.get("/:id", async (req, res, next) => {
   if (!id) return res.status(400).json({ error: "`id` is required" })
 
   const feed = await prisma.feed.findFirst({
-    where: { id: parseInt(id), userId: (req.user as any)._id },
+    where: { id: parseInt(id) },
     include: { entities: true },
   })
 

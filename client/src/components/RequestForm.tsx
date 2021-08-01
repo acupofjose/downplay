@@ -10,7 +10,8 @@ const Centered = styled("div", {
   justifyContent: "center",
   alignItems: "center",
   height: "100%",
-  margin: "30px",
+  margin: "10px",
+  marginBottom: "30px",
   boxSizing: "border-box",
 })
 
@@ -41,7 +42,8 @@ const RequestForm = () => {
           display: "flex",
           border: `15px solid ${theme.colors.black}`,
           borderRadius: "10px",
-          minWidth: "450px",
+          width: "450px",
+          maxWidth: "100%",
         })}>
         <Input
           placeholder={"Any url parsable by youtube-dl"}

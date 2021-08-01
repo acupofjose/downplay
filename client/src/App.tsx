@@ -5,7 +5,7 @@ import { Provider as StyletronProvider } from "styletron-react"
 import { Client as Styletron } from "styletron-engine-atomic"
 import { DarkTheme, BaseProvider } from "baseui"
 
-import { AUTH_LOGIN, AUTH_REGISTER, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "./events"
+import { AUTH_LOGIN, AUTH_REGISTER, REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "./events"
 import Navbar from "./components/Navbar"
 import IndexPage from "./pages/IndexPage"
 import AppContext, { IAppContext, LOCAL_STORAGE_KEY } from "./context/AppContext"
@@ -31,12 +31,15 @@ function App() {
   }
 
   const connect = () => {
+    if (socket) return
+
     //const origin = window.location.origin
     const origin = "http://localhost:3000"
     const url = origin.includes("https") ? origin.replace("https", "wss") : origin.replace("http", "ws")
     socket = new WebSocket(url)
     socket.onopen = () => {
       PubSub.publish(WEBSOCKET_OPEN)
+      PubSub.publish(REFRESH_ENTITIES)
       console.log(`Connection opened to: ${url}`)
     }
 
@@ -53,6 +56,7 @@ function App() {
   }
 
   React.useEffect(() => {
+    console.log("Mounted")
     connect()
     PubSub.subscribe(AUTH_LOGIN, handleLoginOrRegisterEvent)
     PubSub.subscribe(AUTH_REGISTER, handleLoginOrRegisterEvent)

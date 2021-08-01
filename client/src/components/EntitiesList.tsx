@@ -7,8 +7,9 @@ import { Button } from "baseui/button"
 import { ProgressBar } from "baseui/progress-bar"
 import { REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "../events"
 import PubSub from "pubsub-js"
+import { Block } from "baseui/block"
 
-type EntitiesListProps = { entities: Entity[]; progress: { [id: string]: { type: string; progress: number } } }
+type EntitiesListProps = { entities: Entity[]; progress: { [id: string]: number }; status: { [id: string]: string } }
 
 class EntitiesList extends React.Component<any, EntitiesListProps> {
   constructor(props: any) {
@@ -17,6 +18,7 @@ class EntitiesList extends React.Component<any, EntitiesListProps> {
     this.state = {
       entities: [],
       progress: {},
+      status: {},
     }
   }
 
@@ -29,6 +31,7 @@ class EntitiesList extends React.Component<any, EntitiesListProps> {
 
   componentWillUnmount() {
     PubSub.unsubscribe(this.refresh)
+    PubSub.unsubscribe(this.handleWebsocketMessage)
   }
 
   handleWebsocketMessage = (
@@ -37,11 +40,13 @@ class EntitiesList extends React.Component<any, EntitiesListProps> {
   ) => {
     if (data.event && data.entityId && data.progress) {
       const progress = { ...this.state.progress }
+      const status = { ...this.state.status }
 
       const key = data.entityId.toString()
-      progress[key] = { type: data.type, progress: data.progress }
+      progress[key] = data.progress
+      status[key] = data.type
 
-      this.setState({ ...this.state, progress })
+      this.setState({ ...this.state, progress, status })
     }
   }
 
@@ -54,48 +59,47 @@ class EntitiesList extends React.Component<any, EntitiesListProps> {
 
   render() {
     return (
-      <FlexGrid
-        flexGridColumnCount={this.state.entities.length === 0 ? 1 : 3}
-        flexGridColumnGap="scale800"
-        flexGridRowGap="scale800">
-        {this.state.entities.length === 0 && (
-          <FlexGridItem
-            overrides={{
-              Block: { style: { display: "block", margin: "0 auto", maxWidth: "350px", textAlign: "center" } },
-            }}>
-            <Card>
-              <StyledBody>Why not add some URLs up there?</StyledBody>
-            </Card>
-          </FlexGridItem>
-        )}
-        {this.state.entities.map((entity) => (
-          <FlexGridItem key={entity.id}>
-            <Card>
-              <StyledBody>
-                <p>
-                  <strong>{splitter(entity.title, 30)[0]}...</strong>
-                </p>
-                <p>{entity.channel}</p>
-                <p>{splitter(entity.description, 128)[0]}</p>
-              </StyledBody>
-              <StyledAction>
-                {(entity.queue.completedAt || this.state.progress[entity.id].progress === 100) && (
-                  <Button overrides={{ BaseButton: { style: { width: "100%" } } }}>Listen</Button>
-                )}
-                {!entity.queue.completedAt && this.state.progress[entity.id].progress !== 100 && (
-                  <ProgressBar
-                    size="large"
-                    value={this.state.progress[entity.id].progress || 0}
-                    successValue={100}
-                    showLabel={true}
-                    getProgressLabel={() => this.state.progress[entity.id].type}
-                  />
-                )}
-              </StyledAction>
-            </Card>
-          </FlexGridItem>
-        ))}
-      </FlexGrid>
+      <Block margin="10px">
+        <FlexGrid flexGridColumnCount={[1, 1, 2, 5]} flexGridColumnGap="scale800" flexGridRowGap="scale800">
+          {this.state.entities.length === 0 && (
+            <FlexGridItem
+              overrides={{
+                Block: { style: { display: "block", margin: "0 auto", maxWidth: "350px", textAlign: "center" } },
+              }}>
+              <Card>
+                <StyledBody>Why not add some URLs up there?</StyledBody>
+              </Card>
+            </FlexGridItem>
+          )}
+          {this.state.entities.map((entity) => (
+            <FlexGridItem key={entity.id}>
+              <Card headerImage={getEntityThumbnailUrl(entity.id)}>
+                <StyledBody>
+                  <p>
+                    <strong>{splitter(entity.title, 30)[0]}...</strong>
+                  </p>
+                  <p>{entity.channel}</p>
+                  <p>{splitter(entity.description, 128)[0]}</p>
+                </StyledBody>
+                <StyledAction>
+                  {(entity.queue.completedAt || this.state.progress[entity.id] === 100) && (
+                    <Button overrides={{ BaseButton: { style: { width: "100%" } } }}>Listen</Button>
+                  )}
+                  {!entity.queue.completedAt && this.state.progress[entity.id] !== 100 && (
+                    <ProgressBar
+                      size="large"
+                      value={this.state.progress[entity.id] || 0}
+                      successValue={100}
+                      showLabel={true}
+                      getProgressLabel={() => this.state.status[entity.id]}
+                    />
+                  )}
+                </StyledAction>
+              </Card>
+            </FlexGridItem>
+          ))}
+        </FlexGrid>
+      </Block>
     )
   }
 }
