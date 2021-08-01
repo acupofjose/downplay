@@ -46,7 +46,7 @@ router.post("/register", passport.authenticate(localRegisterStrategy, { session:
     data: {
       userId: (req.user as any)._id,
       title: "Default Feed",
-      description: "Percetta's default feed",
+      description: "Downplay's default feed",
       isDefault: true,
     },
   })

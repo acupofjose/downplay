@@ -15,7 +15,7 @@ const firstRunMigration = async () => {
   const user = await prisma.user.create({
     data: {
       username: "admin",
-      password: await hash("percetta"),
+      password: await hash("downplay"),
     },
   })
 
@@ -23,7 +23,7 @@ const firstRunMigration = async () => {
     data: {
       userId: user.id,
       title: "Default Feed",
-      description: "Percetta's default feed",
+      description: "Downplay's default feed",
       isDefault: true,
     },
   })

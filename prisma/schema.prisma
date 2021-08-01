@@ -15,7 +15,7 @@ model Feed {
   userId String
   user User @relation(fields: [userId], references: [id]) 
   title String
-  author String @default("Percetta")
+  author String @default("Downplay")
   isDefault Boolean @default(false)
   description String?
   imageUrl String?

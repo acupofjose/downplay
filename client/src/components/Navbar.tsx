@@ -9,7 +9,7 @@ export default () => {
   ])
   return (
     <AppNavBar
-      title="Percetta"
+      title="Downplay"
       mainItems={mainItems}
       onMainItemSelect={(item) => {
         console.log(item)

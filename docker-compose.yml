@@ -1,7 +1,7 @@
 version: "3.3"
 
 services:
-  percetta:
+  downplay:
     build: .
     restart: unless-stopped
     depends_on:
@@ -11,7 +11,7 @@ services:
     volumes:
       - ./storage:/app/storage
     environment:
-      - DATABASE_URL="postgresql://postgres:password@db:5432/percetta"
+      - DATABASE_URL="postgresql://postgres:password@db:5432/downplay"
 
   db:
     image: postgres:13
@@ -21,7 +21,7 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_DB: percetta
+      POSTGRES_DB: downplay
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     healthcheck:

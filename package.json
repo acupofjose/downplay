@@ -1,14 +1,17 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
+  "name": "downplay",
+  "version": "0.0.1",
+  "description": "A free, self-hostable, youtube-as-a-podcast service.",
   "main": "build/server.js",
+  "author": "Joseph Schultz <joseph@acupofjose.com>",
+  "repository": {
+    "url": "https://github.com/acupofjose/downplay"
+  },
   "scripts": {
     "start": "npm run build && npm --prefix ./client run build && node .",
     "build": "npx tsc && cp src/worker-loader.js build/worker-loader.js",
     "dev": "concurrently \"nodemon\" \"npm --prefix ./client run dev\"",
-    "generate:schema": "npx prisma generate && npx prisma db push",
-    "generate:docs": "typedoc src/server.ts"
+    "generate:schema": "npx prisma generate && npx prisma db push"
   },
   "nodemonConfig": {
     "ext": "ts,js",
@@ -24,7 +27,6 @@
       "start": "cls || clear"
     }
   },
-  "author": "Joseph Schultz <joseph@acupofjose.com>",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^2.27.0",
