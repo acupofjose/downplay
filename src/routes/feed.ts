@@ -2,6 +2,9 @@ import Podcast from "podcast"
 import { Router } from "express"
 import { PrismaClient } from ".prisma/client"
 import { ensureAuthenticated } from "./guards"
+import { ext } from "../util"
+
+const mime = require("mime")
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -65,6 +68,7 @@ router.get("/xml/:id", async (req, res, next) => {
     itunesAuthor: feed.author,
     itunesSubtitle: feed.description || "",
     itunesImage: feed.imageUrl || "",
+    language: "en",
   })
 
   for (const entity of feed.entities) {
@@ -75,6 +79,11 @@ router.get("/xml/:id", async (req, res, next) => {
       url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
       date: entity.createdAt,
       itunesImage: `${getSiteUrl(req)}/entity/thumbnail/${entity.id}`,
+      enclosure: {
+        url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
+        type: mime.getType(ext(entity.path!)),
+        file: entity.path!,
+      },
     })
   }
 
