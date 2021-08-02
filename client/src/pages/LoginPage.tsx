@@ -7,8 +7,8 @@ import { Button, KIND } from "baseui/button"
 import { Notification } from "baseui/notification"
 import { Card } from "baseui/card"
 import { useAppContext } from "../context/AppContext"
-import { login, register } from "../api"
 import { AUTH_LOGIN, AUTH_REGISTER } from "../events"
+import Auth from "../api/auth"
 
 const LoginPage = () => {
   const appContext = useAppContext()
@@ -26,7 +26,7 @@ const LoginPage = () => {
     setIsLoggingIn(true)
 
     try {
-      const result = await login(username, password)
+      const result = await Auth.login(username, password)
       PubSub.publish(AUTH_LOGIN, result.token)
     } catch (err) {
       setError("Unable to login using these credentials")
@@ -41,13 +41,19 @@ const LoginPage = () => {
     setIsRegistering(true)
 
     try {
-      const result = await register(username, password)
+      const result = await Auth.register(username, password)
       PubSub.publish(AUTH_REGISTER, result.token)
     } catch (err) {
       setError("Unable to register using these credentials.")
     }
 
     setIsRegistering(false)
+  }
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleLoginClick()
+    }
   }
 
   const handleForgotPasswordClick = () => {}
@@ -74,7 +80,13 @@ const LoginPage = () => {
         <Input name="username" onChange={(e) => setUsername(e.currentTarget.value)} />
       </FormControl>
       <FormControl label={"Password"}>
-        <Input name="password" type="password" onChange={(e) => setPassword(e.currentTarget.value)} />
+        <Input
+          name="password"
+          type="password"
+          onChange={(e) => setPassword(e.currentTarget.value)}
+          clearOnEscape={true}
+          onKeyUp={handleKeyUp}
+        />
       </FormControl>
       <div className={css({ display: "flex", flexDirection: "column", alignItems: "center" })}>
         <ButtonGroup size={SIZE.large} shape={SHAPE.default}>

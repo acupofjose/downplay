@@ -2,8 +2,9 @@ import React from "react"
 import { Input } from "baseui/input"
 import { styled, useStyletron } from "baseui"
 import { Button } from "baseui/button"
-import { enqueue } from "../api"
+import { Select } from "baseui/select"
 import { REFRESH_ENTITIES } from "../events"
+import Queue from "../api/queue"
 
 const Centered = styled("div", {
   display: "flex",
@@ -19,19 +20,23 @@ const RequestForm = () => {
   const [css, theme] = useStyletron()
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [youtubeUrl, setYoutubeUrl] = React.useState<string>()
+  const [error, setError] = React.useState<string>()
 
   const onSubmitClick = async () => {
     const regex =
       /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/
 
+    setError("")
     if (youtubeUrl && regex.test(youtubeUrl)) {
       setIsLoading(true)
 
-      await enqueue(youtubeUrl)
+      await Queue.enqueue(youtubeUrl)
       PubSub.publish(REFRESH_ENTITIES)
-      setYoutubeUrl("")
 
       setIsLoading(false)
+      setYoutubeUrl("")
+    } else {
+      setError("Url is not recognized.")
     }
   }
 
@@ -46,6 +51,7 @@ const RequestForm = () => {
           maxWidth: "100%",
         })}>
         <Input
+          value={youtubeUrl}
           placeholder={"Any url parsable by youtube-dl"}
           onChange={(e) => setYoutubeUrl(e.currentTarget.value)}
           endEnhancer={() => {}}

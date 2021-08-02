@@ -26,7 +26,7 @@ router.post("/login", async (req, res, next) => {
       req.login(user as any, { session: false }, async (error) => {
         if (error) return res.status(500).json({ error })
 
-        const body = { _id: user.id, username: user.username }
+        const body = { _id: user.id, username: user.username, isAdmin: user.isAdmin }
         const token = jwt.sign({ user: body }, process.env.JWT_SECRET!)
 
         return res.json({ token })
@@ -55,9 +55,9 @@ router.post("/register", passport.authenticate(localRegisterStrategy, { session:
   req.login(req.user, { session: false }, async (error) => {
     if (error) return res.status(500).json({ error })
 
-    const { id, username } = req.user as User
+    const { id, username, isAdmin } = req.user as User
 
-    const body = { _id: id, username }
+    const body = { _id: id, username, isAdmin }
     const token = jwt.sign({ user: body }, process.env.JWT_SECRET!)
 
     return res.json({ token })

@@ -2,7 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import * as util from "util"
 import { Router } from "express"
-import { Feed, PrismaClient, Queue } from "@prisma/client"
+import { Feed as PrismaFeed, PrismaClient, Queue } from "@prisma/client"
 import { YoutubedlResult } from "../types"
 import youtubedl from "youtube-dl-exec"
 import WorkerManager from "../worker-manager"
@@ -41,7 +41,7 @@ router.post("/", ensureAuthenticated, async (req, res, next) => {
 
     console.log(`Retrieving information for ${url}`)
 
-    let feed: Feed | null = null
+    let feed: PrismaFeed | null = null
     if (feedId) {
       feed = await prisma.feed.findFirst({ where: { id: feedId, userId: (req.user as any)._id } })
     } else {

@@ -1,12 +1,15 @@
 import React from "react"
 import { Modal, ModalBody, ModalButton, ModalFooter, ModalHeader, ROLE, SIZE } from "baseui/modal"
-import { KIND as ButtonKind } from "baseui/button"
-import { Entity, getEntityStreamingUrl } from "../api"
+import AudioPlayer from "react-h5-audio-player"
+import "react-h5-audio-player/lib/styles.css"
+import { Entity as PrismaEntity } from "@prisma/client"
+import Entity from "../api/entity"
 
 export type PlayAudioModalProps = {
-  entity?: Entity
+  entity?: PrismaEntity
   isOpen?: boolean
   size?: "default" | "auto" | "full"
+  onClose?: () => void
 }
 
 const defaultProps: PlayAudioModalProps = {
@@ -24,7 +27,10 @@ const PlayAudioModal = (props: PlayAudioModalProps) => {
 
   return (
     <Modal
-      onClose={() => setOptions({ ...options, isOpen: false })}
+      onClose={() => {
+        setOptions({ ...options, isOpen: false })
+        options.onClose?.apply(null)
+      }}
       closeable
       isOpen={options.isOpen}
       animate
@@ -33,9 +39,7 @@ const PlayAudioModal = (props: PlayAudioModalProps) => {
       role={ROLE.dialog}>
       <ModalHeader>{options.entity?.title}</ModalHeader>
       <ModalBody>
-        <video controls={true} autoPlay={true}>
-          <source src={getEntityStreamingUrl(options.entity!.id)}></source>
-        </video>
+        <AudioPlayer autoPlay src={Entity.getStreamingUrl(options.entity.id)} preload={"auto"} />
       </ModalBody>
     </Modal>
   )

@@ -5,24 +5,26 @@ import { Card, StyledContents, StyledTitle } from "baseui/card"
 import { FormControl } from "baseui/form-control"
 import { Input } from "baseui/input"
 import { Button } from "baseui/button"
-import UserSettingsForm from "../components/UserSettingsForm"
 
-const SettingsPage = () => {
+const UserSettingsForm = () => {
   return (
     <React.Fragment>
       <Block maxWidth="900px" display="block" margin="10px auto">
         <Card overrides={{ Root: { style: { width: "100%" } } }}>
-          <StyledTitle>Settings</StyledTitle>
+          <StyledTitle>User Settings</StyledTitle>
           <StyledContents>
-            <FormControl label="Concurrent Workers">
-              <Input></Input>
+            <FormControl label="Current Password">
+              <Input name="password" type="password"></Input>
             </FormControl>
+            <FormControl label="New Password">
+              <Input name="new-password" type="password"></Input>
+            </FormControl>
+            <Button>Save</Button>
           </StyledContents>
         </Card>
-        <UserSettingsForm />
       </Block>
     </React.Fragment>
   )
 }
 
-export default SettingsPage
+export default UserSettingsForm

@@ -16,6 +16,7 @@ const firstRunMigration = async () => {
     data: {
       username: process.env.DEFAULT_ADMIN_USERNAME || "admin",
       password: await hash(process.env.DEFAULT_ADMIN_PASSWORD || "downplay"),
+      isAdmin: true,
     },
   })
 

@@ -1,6 +1,7 @@
 import Podcast from "podcast"
 import { Router } from "express"
 import { PrismaClient } from ".prisma/client"
+import { ensureAuthenticated } from "./guards"
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -8,9 +9,40 @@ const prisma = new PrismaClient()
 const getSiteUrl = (req: any) => req.protocol + "://" + req.get("host")
 
 /**
+ * Returns all of the entities for a given user
+ */
+router.get("/", ensureAuthenticated, async (req, res, next) => {
+  try {
+    const result = await prisma.feed.findMany({
+      where: { userId: (req.user as any)._id },
+      orderBy: { title: "desc" },
+    })
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err })
+  }
+})
+
+/**
+ * Returns a specific entity given an :id
+ */
+router.get("/:id", ensureAuthenticated, async (req, res, next) => {
+  try {
+    const id = req.params.id
+    if (!id) res.status(400).json({ error: ":id is required" })
+
+    const result = await prisma.feed.findFirst({
+      where: { id, userId: (req.user as any)._id },
+    })
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err })
+  }
+})
+/**
  * Returns a podcast feed for a given feed :id
  */
-router.get("/:id", async (req, res, next) => {
+router.get("/xml/:id", async (req, res, next) => {
   const id = req.params.id
   if (!id) return res.status(400).json({ error: "`id` is required" })
 
@@ -40,8 +72,9 @@ router.get("/:id", async (req, res, next) => {
       title: entity.title,
       description: entity.description,
       author: entity.channel,
-      url: `${getSiteUrl(req)}/entities/stream/${entity.id}`,
+      url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
       date: entity.createdAt,
+      itunesImage: `${getSiteUrl(req)}/entity/thumbnail/${entity.id}`,
     })
   }
 

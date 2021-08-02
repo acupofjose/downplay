@@ -1,6 +1,6 @@
-import { getApiHost } from "./api"
 import { WEBSOCKET_OPEN, REFRESH_ENTITIES, WEBSOCKET_MESSAGE } from "./events"
 import PubSub from "pubsub-js"
+import Api from "./api"
 
 class SocketManager {
   socket: WebSocket | null = null
@@ -10,7 +10,7 @@ class SocketManager {
     if (this.socket && !this.socket.CLOSED) return
 
     //const origin = window.location.origin
-    const origin = getApiHost()
+    const origin = Api.host
     const url = origin.includes("https") ? origin.replace("https", "wss") : origin.replace("http", "ws")
     this.endpoint = `${url}?token=${token}`
 
