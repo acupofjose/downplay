@@ -16,5 +16,4 @@ COPY . .
 RUN yarn --cwd ./client install
 
 # Server
-RUN yarn generate:schema
-CMD yarn start
+CMD yarn generate:schema && yarn start
