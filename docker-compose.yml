@@ -11,13 +11,15 @@ services:
     volumes:
       - ./storage:/app/storage
     environment:
-      - DATABASE_URL="postgresql://postgres:password@db:5432/downplay"
+      - DATABASE_URL=postgresql://postgres:password@db:5432/downplay
 
   db:
     image: postgres:13
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
     environment:
       POSTGRES_DB: downplay
       POSTGRES_USER: postgres

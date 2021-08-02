@@ -16,11 +16,6 @@ jobs:
       DATABASE_URL: "postgresql://postgres:password@db:5432/downplay"
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Build the docker-compose stack
-        run: docker-compose up -d db
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 

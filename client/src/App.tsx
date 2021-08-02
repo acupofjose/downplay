@@ -1,20 +1,22 @@
 import React from "react"
-import { Route, Switch, useHistory, withRouter } from "react-router-dom"
+import { Route, Switch, withRouter } from "react-router-dom"
 
 import { Provider as StyletronProvider } from "styletron-react"
 import { Client as Styletron } from "styletron-engine-atomic"
 import { DarkTheme, BaseProvider } from "baseui"
 
-import { AUTH_LOGIN, AUTH_REGISTER, REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "./events"
-import Navbar from "./components/Navbar"
-import IndexPage from "./pages/IndexPage"
+import SocketManager from "./socket-manager"
+import { getEntities } from "./api"
+import { AUTH_LOGIN, AUTH_REGISTER, REFRESH_ENTITIES } from "./events"
 import AppContext, { IAppContext, LOCAL_STORAGE_KEY, DEFAULT_VALUE } from "./context/AppContext"
-import PrivateRoute from "./components/PrivateRoute"
+
 import LoginPage from "./pages/LoginPage"
-import MusicPlayer from "./components/MusicPlayer"
 import FeedPage from "./pages/FeedPage"
 import SettingsPage from "./pages/SettingsPage"
-import { getEntities } from "./api"
+
+import Navbar from "./components/Navbar"
+import IndexPage from "./pages/IndexPage"
+import PrivateRoute from "./components/PrivateRoute"
 
 const engine = new Styletron()
 
@@ -24,8 +26,6 @@ interface AppState {
 }
 
 class App extends React.Component<any, AppState> {
-  socket: WebSocket | null = null
-
   constructor(props: any) {
     super(props)
     this.state = {
@@ -53,7 +53,7 @@ class App extends React.Component<any, AppState> {
     PubSub.subscribe(REFRESH_ENTITIES, this.refreshEntities)
 
     if (this.state.global.token) {
-      this.connect()
+      SocketManager.connect(this.state.global.token)
       this.refreshEntities()
     }
   }
@@ -61,46 +61,19 @@ class App extends React.Component<any, AppState> {
   componentWillUnmount() {
     PubSub.unsubscribe(this.handleLoginOrRegisterEvent)
     PubSub.unsubscribe(this.refreshEntities)
-    this.socket?.close()
+    SocketManager?.close()
   }
 
   handleLoginOrRegisterEvent = (e: string, token: string) => {
     this.setState({ ...this.state, global: { ...this.state.global, token } })
     this.props.history.push("/")
-    this.connect()
+    SocketManager.connect(token)
   }
 
   refreshEntities = async () => {
     const entities = await getEntities()
     if (entities) {
       this.setState({ ...this.state, global: { ...this.state.global, entities: entities } })
-    }
-  }
-
-  connect = () => {
-    if (this.socket && !this.socket.CLOSED) return
-
-    //const origin = window.location.origin
-    const origin = "http://localhost:3000"
-    const url = origin.includes("https") ? origin.replace("https", "wss") : origin.replace("http", "ws")
-    const endpoint = `${url}?token=${this.state.global.token}`
-
-    this.socket = new WebSocket(endpoint)
-    this.socket.onopen = () => {
-      PubSub.publish(WEBSOCKET_OPEN)
-      PubSub.publish(REFRESH_ENTITIES)
-      console.log(`Connection opened to: ${url}`)
-    }
-
-    this.socket.onmessage = (message) => {
-      const json = JSON.parse(message.data)
-      PubSub.publish(WEBSOCKET_MESSAGE, json)
-    }
-
-    this.socket.onerror = (err) => console.error(err)
-    this.socket.onclose = (ev) => {
-      console.log(`Connection closed, attempting to reconnection.`)
-      setTimeout(() => this.connect(), 3000)
     }
   }
 

@@ -14,8 +14,8 @@ const firstRunMigration = async () => {
 
   const user = await prisma.user.create({
     data: {
-      username: "admin",
-      password: await hash("downplay"),
+      username: process.env.DEFAULT_ADMIN_USERNAME || "admin",
+      password: await hash(process.env.DEFAULT_ADMIN_PASSWORD || "downplay"),
     },
   })
 

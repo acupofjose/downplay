@@ -9,11 +9,12 @@ export interface Queue extends PrismaQueue {
   entity: Entity
 }
 
-let hostname = ""
-if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
-  hostname = `http://localhost:3000`
-} else {
-  hostname = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
+export const getApiHost = () => {
+  if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
+    return `http://localhost:3000`
+  } else {
+    return `${window.location.protocol}//${window.location.host}`
+  }
 }
 
 const getLocalStorageState = (key: string = LOCAL_STORAGE_KEY): IAppContext | null => {
@@ -32,7 +33,7 @@ const instance = () => {
   const context = getLocalStorageState()
 
   return axios.create({
-    baseURL: hostname,
+    baseURL: getApiHost(),
     headers: { Authorization: `Bearer ${context?.token}` },
   })
 }
@@ -105,7 +106,7 @@ export const deleteEntity = async (entityId: string) => {
 
 export const getEntityStreamingUrl = (entityId: string) => {
   const endpoint = `/entity/stream/${entityId}`
-  return `${hostname}${endpoint}`
+  return `${getApiHost()}${endpoint}`
 }
 
 export const doesEntityThumbnailExist = async (entityId: string) => {
@@ -116,5 +117,5 @@ export const doesEntityThumbnailExist = async (entityId: string) => {
 
 export const getEntityThumbnailUrl = (entityId: string) => {
   const endpoint = `/entity/thumbnail/${entityId}`
-  return `${hostname}${endpoint}`
+  return `${getApiHost()}${endpoint}`
 }
