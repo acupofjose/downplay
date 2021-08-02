@@ -1,6 +1,8 @@
-# Downplay
+<p style="text-align:center">
+<img src=".github/logo.png" style="display: block; margin: 0 auto; max-width: 100%; width: 500px">
+</p>
 
-#### A free, self-hostable, youtube-as-a-podcast service.
+---
 
 Goals:
 

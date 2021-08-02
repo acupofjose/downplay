@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
   downplay:
-    build: .
+    image: acupofjose/downplay:latest
     restart: unless-stopped
     depends_on:
       - db
@@ -18,8 +18,6 @@ services:
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
     environment:
       POSTGRES_DB: downplay
       POSTGRES_USER: postgres
