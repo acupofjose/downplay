@@ -10,6 +10,17 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Channel {
+  id String @id @unique()
+  name String
+  url String
+  userId String @map("user")
+  user User @relation(fields: [userId], references: [id]) 
+  entities Entity[]
+  lastCheckedAt DateTime?
+  createdAt DateTime @default(now())
+}
+
 model Feed {
   id String @id @default(uuid())
   userId String @map("user")
@@ -23,21 +34,21 @@ model Feed {
 }
 
 model Entity {
-  id String @id @default(uuid())
+  id String @id @unique
+  channelId String @map("channel")
+  channel Channel? @relation(fields: [channelId], references: [id])
   userId String @map("user")
   user User @relation(fields: [userId], references: [id]) 
   feedId String? @map("feed")
   feed  Feed? @relation(fields: [feedId], references: [id])
+  queue Queue? 
   title String
   description String
-  channel String
   path String?
   originalUrl String
   thumbnailUrl String
   thumbnailPath String?
-  codec String?
-  queue Queue?
-  queueId String? @map("queue")
+  publishedAt DateTime
   createdAt DateTime @default(now())
   JSON String
 }
@@ -63,6 +74,7 @@ model User {
   
   isAdmin Boolean @default(false)
 
+  channels Channel[]
   feeds Feed[]
   entities Entity[]
   queueItems Queue[]

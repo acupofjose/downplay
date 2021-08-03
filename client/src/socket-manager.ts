@@ -26,9 +26,7 @@ class SocketManager {
       PubSub.publish(WEBSOCKET_MESSAGE, json)
     }
 
-    this.socket.onerror = (err) => console.error(err)
     this.socket.onclose = (ev) => {
-      console.log(`Connection closed, attempting to reconnection.`)
       setTimeout(() => this.connect(token), 3000)
     }
   }

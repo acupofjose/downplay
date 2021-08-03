@@ -7,7 +7,7 @@ import NodeID3 from "node-id3"
 import { promisify } from "util"
 import { parentPort, workerData } from "worker_threads"
 
-import { PrismaClient, Queue, Entity } from "@prisma/client"
+import { PrismaClient, Queue, Entity, Channel } from "@prisma/client"
 import { STORAGE_PATH } from "./constants"
 
 import { EVENT_DOWNLOAD_COMPLETE, EVENT_DOWNLOAD_ERROR, EVENT_DOWNLOAD_PROGRESS, YoutubedlResult } from "./types"
@@ -15,7 +15,13 @@ import { ext, stream2buffer } from "./util"
 
 const mime = require("mime")
 
-type DownloadItem = { key: "audio" | "thumbnail"; url: string; path: string; entity: Entity }
+type DownloadItem = {
+  key: "audio" | "thumbnail"
+  url: string
+  path: string
+  entity: Entity & { channel: Channel | null }
+}
+
 type ProgressCallback = (type: "audio" | "thumbnail" | "transcode", percent: number) => void
 
 // Flag for put a lock on the tick function
@@ -28,16 +34,115 @@ const log = (data: any) => console.log(`[${workerData.name}] ${data}`)
 const error = (data: any) => console.error(`[${workerData.name}] ${data}`)
 const getWorkerId = () => workerData.id
 
+function init() {
+  log(`initialized`)
+  setInterval(tick, tickInterval)
+}
+
+/**
+ * Marks a tick on the setInterval Function
+ * Will check the database for queue items
+ * and process them accordingly.
+ * @returns
+ */
+async function tick() {
+  if (isProcessing) return
+  isProcessing = true
+
+  const nextQueueItem = await prisma.queue.findFirst({
+    where: { completedAt: null, isRunning: false },
+    orderBy: { createdAt: "asc" },
+  })
+
+  if (nextQueueItem) {
+    await process(nextQueueItem)
+  }
+
+  isProcessing = false
+}
+
+/**
+ * Processes a queue instance by breaking it into download parts and
+ * adding a `ProgressCallback` instance that passes its results up to the
+ * `parentPort`
+ *
+ * @param instance
+ * @returns
+ */
+async function process(instance: Queue) {
+  try {
+    // Get a (async) lock for this instance
+    await prisma.queue.update({ where: { id: instance.id }, data: { isRunning: true, workerId: getWorkerId() } })
+    const entity = await prisma.entity.findFirst({ where: { id: instance?.entityId }, include: { channel: true } })
+
+    if (!entity) {
+      log(`Could not find entity of id ${instance.entityId}`)
+      return
+    }
+
+    // Create a handler for download progress callbacks that we can
+    // then send to the client via websocket
+    const onDownloadProgress = (type: "audio" | "thumbnail" | "transcode", percent: number) => {
+      const msg = {
+        event: EVENT_DOWNLOAD_PROGRESS,
+        type,
+        userId: instance.userId,
+        entityId: instance?.entityId,
+        progress: percent,
+      }
+      parentPort?.postMessage(msg)
+    }
+
+    log(`Attempting to download ${entity?.title}`)
+
+    await handleDownload(entity, onDownloadProgress)
+
+    // Remove lock on this file and mark as completed
+    await prisma.queue.update({
+      where: { id: instance.id },
+      data: { isRunning: false, workerId: null, completedAt: new Date() },
+    })
+
+    parentPort?.postMessage({
+      event: EVENT_DOWNLOAD_COMPLETE,
+      userId: instance.userId,
+      entityId: instance.entityId,
+    })
+
+    log(`Completed Queue[#${instance.id}]`)
+  } catch (err) {
+    // Remove lock on file and increment the error count
+    await prisma.queue.update({
+      where: { id: instance.id },
+      data: {
+        isRunning: false,
+        workerId: null,
+        hasErrored: true,
+        errorCount: instance.errorCount + 1,
+      },
+    })
+
+    parentPort?.postMessage({
+      event: EVENT_DOWNLOAD_ERROR,
+      entityId: instance.entityId,
+    })
+    error(err)
+  }
+}
+
 /**
  * Download from a given entity and include access to progress callbacks
  * Includes downloading a thumbnail as well as the actual audio file
  * @param entity
  * @param onProgress
  */
-async function handleDownload(entity: Entity, onProgress: ProgressCallback): Promise<void> {
+async function handleDownload(
+  entity: Entity & { channel: Channel | null },
+  onProgress: ProgressCallback
+): Promise<void> {
   const downloads: DownloadItem[] = []
 
-  const outDir = path.join(STORAGE_PATH, entity.channel)
+  const outDir = path.join(STORAGE_PATH, entity.channel!.name.replace(/[^a-z0-9]/gi, "_"))
   const title = entity.title.replace(/[^a-z0-9]/gi, "_")
 
   if (!fs.existsSync(outDir)) {
@@ -155,15 +260,15 @@ function transcode(item: DownloadItem, onProgress: ProgressCallback): Promise<vo
 function addId3Tags(item: DownloadItem, pathToMp3: string): Promise<void> {
   return new Promise(async (resolve, reject) => {
     // Need the updated entity that has access to the downloaded information
-    const entity = await prisma.entity.findFirst({ where: { id: item.entity.id } })
+    const entity = await prisma.entity.findFirst({ where: { id: item.entity.id }, include: { channel: true } })
     if (!entity) return
 
     const coverBuffer = await stream2buffer(fs.createReadStream(entity.thumbnailPath!))
 
     const tags: NodeID3.Tags = {
       title: entity.title,
-      artist: entity.channel,
-      album: entity.channel,
+      artist: entity.channel?.name,
+      album: entity.channel?.name,
       date: entity.createdAt!.toLocaleString(),
       image: {
         mime: mime.getType(ext(entity.thumbnailPath!)),
@@ -181,102 +286,6 @@ function addId3Tags(item: DownloadItem, pathToMp3: string): Promise<void> {
       return resolve()
     })
   })
-}
-
-/**
- * Processes a queue instance by breaking it into download parts and
- * adding a `ProgressCallback` instance that passes its results up to the
- * `parentPort`
- *
- * @param instance
- * @returns
- */
-async function process(instance: Queue) {
-  try {
-    // Get a (async) lock for this instance
-    await prisma.queue.update({ where: { id: instance.id }, data: { isRunning: true, workerId: getWorkerId() } })
-    const entity = await prisma.entity.findFirst({ where: { id: instance?.entityId } })
-
-    if (!entity) {
-      log(`Could not find entity of id ${instance.entityId}`)
-      return
-    }
-
-    // Create a handler for download progress callbacks that we can
-    // then send to the client via websocket
-    const onDownloadProgress = (type: "audio" | "thumbnail" | "transcode", percent: number) => {
-      const msg = {
-        event: EVENT_DOWNLOAD_PROGRESS,
-        type,
-        userId: instance.userId,
-        entityId: instance?.entityId,
-        progress: percent,
-      }
-      parentPort?.postMessage(msg)
-    }
-
-    log(`Attempting to download ${entity?.title}`)
-
-    await handleDownload(entity, onDownloadProgress)
-
-    // Remove lock on this file and mark as completed
-    await prisma.queue.update({
-      where: { id: instance.id },
-      data: { isRunning: false, workerId: null, completedAt: new Date() },
-    })
-
-    parentPort?.postMessage({
-      event: EVENT_DOWNLOAD_COMPLETE,
-      userId: instance.userId,
-      entityId: instance.entityId,
-    })
-
-    log(`Completed Queue[#${instance.id}]`)
-  } catch (err) {
-    // Remove lock on file and increment the error count
-    await prisma.queue.update({
-      where: { id: instance.id },
-      data: {
-        isRunning: false,
-        workerId: null,
-        hasErrored: true,
-        errorCount: instance.errorCount + 1,
-      },
-    })
-
-    parentPort?.postMessage({
-      event: EVENT_DOWNLOAD_ERROR,
-      entityId: instance.entityId,
-    })
-    error(err)
-  }
-}
-
-/**
- * Marks a tick on the setInterval Function
- * Will check the database for queue items
- * and process them accordingly.
- * @returns
- */
-async function tick() {
-  if (isProcessing) return
-  isProcessing = true
-
-  const nextQueueItem = await prisma.queue.findFirst({
-    where: { completedAt: null, isRunning: false },
-    orderBy: { createdAt: "asc" },
-  })
-
-  if (nextQueueItem) {
-    await process(nextQueueItem)
-  }
-
-  isProcessing = false
-}
-
-function init() {
-  log(`initialized`)
-  setInterval(tick, tickInterval)
 }
 
 init()

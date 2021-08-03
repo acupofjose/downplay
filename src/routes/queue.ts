@@ -1,6 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import * as util from "util"
+import moment from "moment"
 import { Router } from "express"
 import { Feed as PrismaFeed, PrismaClient, Queue } from "@prisma/client"
 import { YoutubedlResult } from "../types"
@@ -67,15 +68,29 @@ router.post("/", ensureAuthenticated, async (req, res, next) => {
         const buffer = await readfile(filePath)
         const json = JSON.parse(buffer.toString()) as YoutubedlResult
 
+        // Create a channel stub if it doesn't already exist
+        if (!(await prisma.channel.findFirst({ where: { id: json.channel_id } }))) {
+          await prisma.channel.create({
+            data: {
+              id: json.channel_id,
+              name: json.channel,
+              url: json.channel_url,
+              userId: (req.user as any)?._id,
+            },
+          })
+        }
+
         const entity = await prisma.entity.create({
           data: {
+            id: json.id,
+            channelId: json.channel_id!,
             userId: (req.user as any)?._id,
             title: json.title,
             feedId: feed?.id,
             description: json.description,
-            channel: json.channel,
             originalUrl: json.webpage_url,
             thumbnailUrl: json.thumbnail,
+            publishedAt: moment(json.upload_date).toDate(),
             JSON: buffer.toString(),
           },
         })

@@ -8,3 +8,5 @@ storage/*
 !.gitkeep
 *.db3
 *.log
+
+.env

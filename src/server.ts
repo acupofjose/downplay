@@ -15,6 +15,7 @@ import settingsRoutes from "./routes/settings"
 
 import { migrate } from "./migrator"
 import { ensureAdmin, ensureAuthenticated } from "./routes/guards"
+import YoutubeAPI from "./providers/youtube-api"
 
 require("dotenv").config()
 

@@ -51,7 +51,7 @@ router.get("/xml/:id", async (req, res, next) => {
 
   const feed = await prisma.feed.findFirst({
     where: { id },
-    include: { entities: true },
+    include: { entities: { include: { channel: true } } },
   })
 
   if (!feed) return res.status(400).json({ error: `Feed[${id}] was not found.` })
@@ -75,7 +75,7 @@ router.get("/xml/:id", async (req, res, next) => {
     podcast.addItem({
       title: entity.title,
       description: entity.description,
-      author: entity.channel,
+      author: entity.channel?.name,
       url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
       date: entity.createdAt,
       itunesImage: `${getSiteUrl(req)}/entity/thumbnail/${entity.id}`,

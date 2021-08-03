@@ -19,7 +19,7 @@ const Centered = styled("div", {
 const RequestForm = () => {
   const [css, theme] = useStyletron()
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
-  const [youtubeUrl, setYoutubeUrl] = React.useState<string>()
+  const [youtubeUrl, setYoutubeUrl] = React.useState<string>("")
   const [error, setError] = React.useState<string>()
 
   const onSubmitClick = async () => {
