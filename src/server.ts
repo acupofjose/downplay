@@ -13,6 +13,7 @@ import entityRoutes from "./routes/entity"
 import feedRoutes from "./routes/feed"
 import queueRoutes from "./routes/queue"
 import configRoutes from "./routes/config"
+import channelRoutes from "./routes/channel"
 import userRoutes from "./routes/user"
 
 import { ensureAuthenticated } from "./routes/guards"
@@ -41,6 +42,7 @@ async function start() {
 
   app.use("/auth", authRoutes)
   app.use("/entity", entityRoutes)
+  app.use("/channel", userRoutes)
   app.use("/feed", feedRoutes)
   app.use("/queue", ensureAuthenticated, queueRoutes)
   app.use("/config", configRoutes)

@@ -5,8 +5,6 @@ import { ensureAuthenticated } from "./guards"
 const router = Router()
 const prisma = new PrismaClient()
 
-const getSiteUrl = (req: any) => req.protocol + "://" + req.get("host")
-
 /**
  * Returns all of the entities for a given user
  */
