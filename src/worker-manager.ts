@@ -76,7 +76,7 @@ class WorkerManager {
     const id = uuidv4()
     const worker = new Worker(path.join(__dirname, "worker-loader.js"), {
       workerData: {
-        path: "./worker.js",
+        path: "./workers/youtube-video-worker.js",
         id,
         name: `worker-${id.substr(id.length - 4, id.length)}}`,
       },

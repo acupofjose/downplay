@@ -17,7 +17,7 @@ const defaultConfig: ConfigItems = {
   concurrentWorkers: 3,
   shouldTranscodeAudio: true,
   shouldPersistJson: false,
-  allowRegistration: false,
+  allowRegistration: true,
   allowHeartbeat: false,
   allowErrorReporting: false,
   jsonSigningSecret: process.env.JWT_SECRET,

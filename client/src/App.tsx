@@ -97,26 +97,29 @@ class App extends React.Component<any, AppState> {
   init = async () => {
     this.setState({ ...this.state, isLoading: true })
 
+    let status: ConfigStatus
+
     try {
-      const status = await Config.status()
-
-      if (this.state.global.token) {
-        const isValidToken = await Api.checkTokenIsValid()
-
-        // Invalidate global state
-        if (!isValidToken) {
-          this.setState({ ...this.state, global: { ...DEFAULT_VALUE, status }, isLoading: false })
-          return
-        }
-
-        SocketManager.connect(this.state.global.token)
-      }
-
-      this.setState({ ...this.state, global: { ...this.state.global, status }, isLoading: false })
+      status = await Config.status()
     } catch (err) {
       // Server is not up, make a loop to recheck
       setTimeout(() => this.init(), 2000)
+      return
     }
+
+    if (this.state.global.token) {
+      const isValidToken = await Api.checkTokenIsValid()
+
+      // Invalidate global state
+      if (!isValidToken) {
+        this.setState({ ...this.state, global: { ...DEFAULT_VALUE, status }, isLoading: false })
+        return
+      }
+
+      SocketManager.connect(this.state.global.token)
+    }
+
+    this.setState({ ...this.state, global: { ...this.state.global, status }, isLoading: false })
   }
 
   handleLoginOrRegisterEvent = (e: string, token: string) => {

@@ -4,15 +4,15 @@ import path from "path"
 import ffmpeg from "fluent-ffmpeg"
 import NodeID3 from "node-id3"
 
-import Config, { ConfigItems } from "./config"
+import Config, { ConfigItems } from "../config"
 import { promisify } from "util"
 import { parentPort, workerData } from "worker_threads"
 
 import { PrismaClient, Queue, Entity, Channel } from "@prisma/client"
-import { STORAGE_PATH } from "./constants"
+import { STORAGE_PATH } from "../constants"
 
-import { EVENT_DOWNLOAD_COMPLETE, EVENT_DOWNLOAD_ERROR, EVENT_DOWNLOAD_PROGRESS, YoutubedlResult } from "./types"
-import { ext, stream2buffer } from "./util"
+import { EVENT_DOWNLOAD_COMPLETE, EVENT_DOWNLOAD_ERROR, EVENT_DOWNLOAD_PROGRESS, YoutubedlResult } from "../types"
+import { ext, stream2buffer } from "../util"
 
 const mime = require("mime")
 
@@ -30,6 +30,9 @@ let config: ConfigItems | undefined
 let isProcessing = false
 const tickInterval = 5000
 const prisma = new PrismaClient()
+
+const mkdir = promisify(fs.mkdir)
+const exists = promisify(fs.exists)
 const unlink = promisify(fs.unlink)
 
 const log = (data: any) => console.log(`[${workerData.name}] ${data}`)
@@ -153,12 +156,12 @@ async function handleDownload(
 ): Promise<void> {
   const downloads: DownloadItem[] = []
 
-  const outDir = path.join(STORAGE_PATH, entity.channel!.name.replace(/[^a-z0-9]/gi, "_"))
+  const outDir = path.join(STORAGE_PATH, entity.userId, entity.channel!.name.replace(/[^a-z0-9]/gi, "_"))
   const title = entity.title.replace(/[^a-z0-9]/gi, "_")
 
-  if (!fs.existsSync(outDir)) {
+  if (!(await exists(outDir))) {
     log(`Directory ${outDir} does not exist, creating...`)
-    fs.mkdirSync(outDir)
+    await mkdir(outDir, { recursive: true })
   }
 
   // YoutubeDL provides incredible JSON files...
