@@ -16,13 +16,32 @@ Goals:
 - [x] Download Youtube Playlists
 - [x] Download Thumbnail Artwork
 - [x] Transcode Audio to `.mp3` format
-- [ ] Add ID3 tags to mp3 files
-- [ ] Play files from client
+- [x] Add ID3 tags to mp3 files
+- [x] Play files from client
 - [x] Live updating client
 - [ ] CRUD Operations
-- [ ] Settings management from client
+- [x] Settings management from client
+- [ ] Queue channels to watch and automatically download
+- [ ] Webhooks / Notifications
 
 ## Getting Started
+
+Generate a new `JWT_SECRET` and put it into your `.env` file.
+
+```bash
+$ cp .env.example .env
+$ openssl rand -hex 32
+```
+
+Using the `docker-compose.yml` in this repo, adjust the settings accordingly to your setup.
+
+**You should change the DB passwords and make sure ports are not exposed**
+
+Then it's as simple as:
+
+```bash
+$ docker-compose up -d
+```
 
 ## API
 
