@@ -7,6 +7,11 @@ const router = Router()
 const prisma = new PrismaClient()
 
 router.get("/", ensureAdmin, (req, res, next) => {
+  const values = { ...Config.values }
+
+  // Hide server keys
+  delete values.jsonSigningSecret
+
   res.json({ ...Config.values })
 })
 
@@ -31,7 +36,16 @@ router.post("/", ensureAdmin, async (req, res, next) => {
 router.get("/status", async (req, res, next) => {
   const adminUser = await prisma.user.findFirst({ where: { isAdmin: true } })
 
-  res.json({ initialized: !!adminUser })
+  const { allowRegistration, allowHeartbeat, allowErrorReporting } = Config.values
+
+  res.json({
+    initialized: !!adminUser,
+    config: {
+      allowRegistration,
+      allowHeartbeat,
+      allowErrorReporting,
+    },
+  })
 })
 
 export default router

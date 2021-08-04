@@ -1,5 +1,5 @@
 <p style="text-align:center">
-<img src=".github/logo.png" style="display: block; margin: 0 auto; max-width: 100%; width: 500px">
+<img src="assets/logo-dark.png" style="display: block; margin: 0 auto; max-width: 100%; width: 450px">
 </p>
 
 ---
