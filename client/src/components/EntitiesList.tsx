@@ -110,7 +110,9 @@ class EntitiesList extends React.Component<any, EntitiesListState> {
                   <Delete size="2rem" />
                 </Button>
               </Block>
-              <Card headerImage={entity.thumbnailPath ? Entity.getThumbnailUrl(entity.id) : ""}>
+              <Card
+                headerImage={entity.thumbnailPath ? Entity.getThumbnailUrl(entity.id) : ""}
+                overrides={{ HeaderImage: { style: { minWidth: "100%" } } }}>
                 <StyledBody>
                   <p>
                     <strong>{splitter(entity.title, 30)[0]}...</strong>
