@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client"
 import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions } from "passport-jwt"
 import { Strategy as LocalStrategy } from "passport-local"
 import { compare, hash } from "./util"
+import Config from "./config"
 
 const prisma = new PrismaClient()
 
@@ -43,6 +44,8 @@ export const localRegisterStrategy = new LocalStrategy(
   { usernameField: "username", passwordField: "password" },
   async (username, password, done) => {
     try {
+      if (!Config.values.allowRegistration) return done("Registration has been disabled on this server.", null)
+
       const userCount = await prisma.user.count()
       const hashedPassword = await hash(password)
       const user = await prisma.user.create({ data: { username, password: hashedPassword, isAdmin: userCount === 0 } })

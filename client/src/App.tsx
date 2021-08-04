@@ -32,15 +32,15 @@ import PrivateRoute from "./components/PrivateRoute"
 
 import PlayAudioModal, { PlayAudioModalProps } from "./components/PlayAudioModal"
 import OnboardingPage from "./pages/OnboardingPage"
-import Config from "./api/config"
+import Config, { ConfigStatus } from "./api/config"
 import { Block } from "baseui/block"
+import Api from "./api"
 
 const engine = new Styletron()
 
 interface AppState {
   global: IAppContext
   isLoading: boolean
-  isInitialized: boolean
   showPlayAudioModal: boolean
   playAudioModalProps?: PlayAudioModalProps
 }
@@ -51,7 +51,6 @@ class App extends React.Component<any, AppState> {
     this.state = {
       global: this.getPersisted(),
       isLoading: true,
-      isInitialized: false,
       showPlayAudioModal: false,
     }
   }
@@ -98,13 +97,26 @@ class App extends React.Component<any, AppState> {
   init = async () => {
     this.setState({ ...this.state, isLoading: true })
 
-    const { initialized: isInitialized } = await Config.status()
+    try {
+      const status = await Config.status()
 
-    if (this.state.global.token) {
-      SocketManager.connect(this.state.global.token)
+      if (this.state.global.token) {
+        const isValidToken = await Api.checkTokenIsValid()
+
+        // Invalidate global state
+        if (!isValidToken) {
+          this.setState({ ...this.state, global: { ...DEFAULT_VALUE, status }, isLoading: false })
+          return
+        }
+
+        SocketManager.connect(this.state.global.token)
+      }
+
+      this.setState({ ...this.state, global: { ...this.state.global, status }, isLoading: false })
+    } catch (err) {
+      // Server is not up, make a loop to recheck
+      setTimeout(() => this.init(), 2000)
     }
-
-    this.setState({ ...this.state, isInitialized, isLoading: false })
   }
 
   handleLoginOrRegisterEvent = (e: string, token: string) => {
@@ -172,8 +184,8 @@ class App extends React.Component<any, AppState> {
                 <Spinner />
               </Block>
             )}
-            {!this.state.isLoading && !this.state.isInitialized && <OnboardingPage />}
-            {!this.state.isLoading && this.state.isInitialized && (
+            {!this.state.isLoading && !this.state.global.status.initialized && <OnboardingPage />}
+            {!this.state.isLoading && this.state.global.status.initialized && (
               <Switch>
                 <Route path="/login" exact={true}>
                   <LoginPage />

@@ -51,10 +51,15 @@ router.get("/xml/:id", async (req, res, next) => {
 
   const feed = await prisma.feed.findFirst({
     where: { id },
-    include: { entities: { include: { channel: true } } },
   })
 
   if (!feed) return res.status(400).json({ error: `Feed[${id}] was not found.` })
+
+  const entities = await prisma.entity.findMany({
+    where: { feedId: id },
+    include: { channel: true },
+    orderBy: { publishedAt: "desc" },
+  })
 
   const podcast = new Podcast({
     title: feed.title,
@@ -71,13 +76,13 @@ router.get("/xml/:id", async (req, res, next) => {
     language: "en",
   })
 
-  for (const entity of feed.entities) {
+  for (const entity of entities) {
     podcast.addItem({
       title: entity.title,
       description: entity.description,
       author: entity.channel?.name,
       url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
-      date: entity.createdAt,
+      date: entity.publishedAt,
       itunesImage: `${getSiteUrl(req)}/entity/thumbnail/${entity.id}`,
       enclosure: {
         url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,

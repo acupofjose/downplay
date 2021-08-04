@@ -1,7 +1,9 @@
 import * as React from "react"
 import { AppNavBar, NavItemT, setItemActive } from "baseui/app-nav-bar"
-import { useHistory } from "react-router-dom"
+import { Link, useHistory } from "react-router-dom"
 import { useAppContext } from "../context/AppContext"
+
+import "./Navbar.scss"
 
 export default () => {
   const context = useAppContext()
@@ -38,16 +40,22 @@ export default () => {
   }, [history])
 
   return (
-    <AppNavBar
-      title="Downplay"
-      mainItems={context.token ? authenticatedItems : publicItems}
-      onMainItemSelect={(item) => {
-        if (selectedItem != item) {
-          history.push(item.info)
-          setSelectedItem(item)
-          setAuthenticatedItems((prev) => setItemActive(prev, item))
+    <div className="Navbar">
+      <AppNavBar
+        title={
+          <Link to="/">
+            <img className="logo" src="/logo-light.png" alt="Downplay" />
+          </Link>
         }
-      }}
-    />
+        mainItems={context.token ? authenticatedItems : publicItems}
+        onMainItemSelect={(item) => {
+          if (selectedItem != item) {
+            history.push(item.info)
+            setSelectedItem(item)
+            setAuthenticatedItems((prev) => setItemActive(prev, item))
+          }
+        }}
+      />
+    </div>
   )
 }

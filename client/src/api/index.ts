@@ -11,6 +11,17 @@ export default class Api {
     })
   }
 
+  static checkTokenIsValid = async () => {
+    const context = Api.getLocalStorageState()
+
+    const result = await axios.head(`${Api.host}/user`, {
+      headers: {
+        Authorization: `Bearer ${context?.token}`,
+      },
+    })
+    return result.status === 200
+  }
+
   static getLocalStorageState = (key: string = LOCAL_STORAGE_KEY): IAppContext | null => {
     try {
       const item = localStorage.getItem(key)

@@ -11,6 +11,11 @@ export type ConfigItems = {
   allowErrorReporting?: boolean
 }
 
+export type ConfigStatus = {
+  initialized: boolean
+  config: { allowRegistration: boolean; allowHeartbeart: boolean; allowErrorReporting: boolean }
+}
+
 export default class Config {
   static get = async (token?: string) => {
     const endpoint = `/config`
@@ -34,6 +39,6 @@ export default class Config {
   static status = async () => {
     const endpoint = `/config/status`
     const result = await Api.instance.get(endpoint)
-    return result.data as { initialized: boolean }
+    return result.data as ConfigStatus
   }
 }

@@ -97,13 +97,15 @@ const LoginPage = () => {
             disabled={isLoggingIn || isRegistering}>
             Login
           </Button>
-          <Button
-            kind={KIND.secondary}
-            onClick={handleRegisterClick}
-            isLoading={isRegistering}
-            disabled={isLoggingIn || isRegistering}>
-            Register
-          </Button>
+          {appContext.status.config.allowRegistration && (
+            <Button
+              kind={KIND.secondary}
+              onClick={handleRegisterClick}
+              isLoading={isRegistering}
+              disabled={isLoggingIn || isRegistering}>
+              Register
+            </Button>
+          )}
         </ButtonGroup>
         <Button
           size={SIZE.mini}

@@ -13,8 +13,9 @@ import entityRoutes from "./routes/entity"
 import feedRoutes from "./routes/feed"
 import queueRoutes from "./routes/queue"
 import configRoutes from "./routes/config"
+import userRoutes from "./routes/user"
 
-import { ensureAdmin, ensureAuthenticated } from "./routes/guards"
+import { ensureAuthenticated } from "./routes/guards"
 
 require("dotenv").config()
 
@@ -43,6 +44,7 @@ async function start() {
   app.use("/feed", feedRoutes)
   app.use("/queue", ensureAuthenticated, queueRoutes)
   app.use("/config", configRoutes)
+  app.use("/user", userRoutes)
 
   app.use((err: any, req: any, res: any, next: any) => {
     res.status(err.status || 500)
