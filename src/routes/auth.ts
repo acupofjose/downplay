@@ -43,19 +43,19 @@ router.post("/login", async (req, res, next) => {
 router.post("/register", passport.authenticate(localRegisterStrategy, { session: false }), async (req, res, next) => {
   if (!req.user) return res.status(500).json({ error: "User has not been assigned to internal parameters." })
 
-  await prisma.feed.create({
-    data: {
-      userId: (req.user as any)._id,
-      title: "Default Feed",
-      description: "Downplay's default feed",
-      isDefault: true,
-    },
-  })
-
   req.login(req.user, { session: false }, async (error) => {
     if (error) return res.status(500).json({ error })
 
     const { id, username, isAdmin } = req.user as User
+
+    await prisma.feed.create({
+      data: {
+        userId: id,
+        title: "Default Feed",
+        description: "Downplay's default feed",
+        isDefault: true,
+      },
+    })
 
     const body = { _id: id, username, isAdmin }
     const token = jwt.sign({ user: body }, process.env.JWT_SECRET!)

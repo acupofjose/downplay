@@ -22,7 +22,7 @@ class SocketManager {
     try {
       const { token } = getQueryJsonFromUrl(request.headers.origin + request.url)
 
-      if (!token || !jwt.verify(token, Config.JsonSigningSecret)) return
+      if (!token || !jwt.verify(token, Config.values.jsonSigningSecret!)) return
 
       const decoded = jwt.decode(token) as { user: { _id: string; username: string } }
 

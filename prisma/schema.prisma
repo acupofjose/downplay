@@ -50,7 +50,7 @@ model Entity {
   thumbnailPath String?
   publishedAt DateTime
   createdAt DateTime @default(now())
-  JSON String
+  JSON String?
 }
 
 model Queue {

@@ -3,7 +3,7 @@ import Config from "../config"
 
 const api = google.youtube({
   version: "v3",
-  auth: Config.YoutubeApiKey,
+  auth: Config.values.youtubeApiKey,
 })
 
 export default class YoutubeAPI {

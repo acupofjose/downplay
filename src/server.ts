@@ -4,6 +4,7 @@ import cors from "cors"
 import passport from "passport"
 import { json, urlencoded } from "body-parser"
 
+import Config from "./config"
 import SocketManager from "./socket-manager"
 import WorkerManager from "./worker-manager"
 
@@ -11,19 +12,16 @@ import authRoutes from "./routes/auth"
 import entityRoutes from "./routes/entity"
 import feedRoutes from "./routes/feed"
 import queueRoutes from "./routes/queue"
-import settingsRoutes from "./routes/settings"
+import configRoutes from "./routes/config"
 
-import { migrate } from "./migrator"
 import { ensureAdmin, ensureAuthenticated } from "./routes/guards"
-import YoutubeAPI from "./providers/youtube-api"
 
 require("dotenv").config()
 
 const PORT = process.env.PORT || 3000
 
 async function start() {
-  // Perform necessary dynamic db migrations
-  await migrate()
+  await Config.refresh()
 
   WorkerManager.init()
 
@@ -44,7 +42,7 @@ async function start() {
   app.use("/entity", entityRoutes)
   app.use("/feed", feedRoutes)
   app.use("/queue", ensureAuthenticated, queueRoutes)
-  app.use("/settings", ensureAdmin, settingsRoutes)
+  app.use("/config", configRoutes)
 
   app.use((err: any, req: any, res: any, next: any) => {
     res.status(err.status || 500)

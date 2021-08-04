@@ -1,23 +1,57 @@
+import { PrismaClient } from "@prisma/client"
+import PubSub from "pubsub-js"
+import { CONFIG_CHANGED } from "./events"
+
+export type ConfigItems = {
+  youtubeApiKey?: string
+  jsonSigningSecret?: string
+  concurrentWorkers: number
+  shouldTranscodeAudio: boolean
+  shouldPersistJson: boolean
+  allowRegistration: boolean
+  allowHeartbeat: boolean
+  allowErrorReporting: boolean
+}
+
+const defaultConfig: ConfigItems = {
+  concurrentWorkers: 3,
+  shouldTranscodeAudio: true,
+  shouldPersistJson: false,
+  allowRegistration: false,
+  allowHeartbeat: false,
+  allowErrorReporting: false,
+  jsonSigningSecret: process.env.JWT_SECRET,
+  youtubeApiKey: process.env.YOUTUBE_API_KEY,
+}
+
+const prisma = new PrismaClient()
+const CONFIG_KEY = "config"
+
 class Config {
-  static get JsonSigningSecret(): string {
-    if (process.env.JWT_SECRET) return process.env.JWT_SECRET
-    else throw new Error("JWT_SECRET must be defined in environment")
+  values: ConfigItems = { ...defaultConfig }
+
+  async refresh() {
+    const result = await prisma.meta.findFirst({ where: { key: CONFIG_KEY } })
+    if (result) {
+      const json = JSON.parse(result.value) as ConfigItems
+      this.values = { ...defaultConfig, ...json }
+      return this.values
+    } else {
+      // Should only end up being called once.
+      await this.persist()
+      return this.values
+    }
   }
 
-  static get Port(): number {
-    if (process.env.PORT) return parseInt(process.env.PORT)
-    else return 3000
-  }
-
-  static get ConcurrentWorkers(): number {
-    if (process.env.CONCURRENT_WORKERS) return parseInt(process.env.CONCURRENT_WORKERS)
-    else return 3
-  }
-
-  static get YoutubeApiKey(): string {
-    if (process.env.YOUTUBE_API_KEY) return process.env.YOUTUBE_API_KEY
-    else throw new Error("Application must specify env var `YOUTUBE_API_KEY` to use this functionality.")
+  async persist() {
+    await prisma.meta.upsert({
+      create: { key: CONFIG_KEY, value: JSON.stringify(this.values) },
+      update: { key: CONFIG_KEY, value: JSON.stringify(this.values) },
+      where: { key: CONFIG_KEY },
+    })
+    PubSub.publish(CONFIG_CHANGED)
+    return this.values
   }
 }
 
-export default Config
+export default new Config()

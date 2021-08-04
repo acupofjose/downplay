@@ -6,21 +6,15 @@ import { FormControl } from "baseui/form-control"
 import { Input } from "baseui/input"
 import { Button } from "baseui/button"
 import UserSettingsForm from "../components/UserSettingsForm"
+import { Checkbox, STYLE_TYPE, LABEL_PLACEMENT } from "baseui/checkbox"
+import { ConfigItems } from "../api/config"
+import { SystemSettingsForm } from "../components/SystemSettingsForm"
 
 const SettingsPage = () => {
   return (
     <React.Fragment>
-      <Block maxWidth="900px" display="block" margin="10px auto">
-        <Card overrides={{ Root: { style: { width: "100%" } } }}>
-          <StyledTitle>Settings</StyledTitle>
-          <StyledContents>
-            <FormControl label="Concurrent Workers">
-              <Input></Input>
-            </FormControl>
-          </StyledContents>
-        </Card>
-        <UserSettingsForm />
-      </Block>
+      <SystemSettingsForm />
+      <UserSettingsForm />
     </React.Fragment>
   )
 }

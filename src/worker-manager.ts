@@ -3,6 +3,9 @@ import { Worker } from "worker_threads"
 import { Entity, PrismaClient, Queue } from "@prisma/client"
 import { v4 as uuidv4 } from "uuid"
 import socketManager from "./socket-manager"
+import Config from "./config"
+import PubSub from "pubsub-js"
+import { CONFIG_CHANGED } from "./events"
 
 const prisma: PrismaClient = new PrismaClient()
 
@@ -12,9 +15,25 @@ class WorkerManager {
   processing: (Queue & { entity: Entity })[] = []
   workers: { [id: string]: Worker } = {}
 
+  constructor() {
+    PubSub.subscribe(CONFIG_CHANGED, async () => {
+      await this.cleanup()
+      await this.init()
+    })
+  }
+
   init = async () => {
+    this.workerCount = Config.values.concurrentWorkers
+
     await this.spawnStaggeredWorkers()
     await this.cleanupBadExit()
+  }
+
+  cleanup = async () => {
+    for (const [id, worker] of Object.entries(this.workers)) {
+      await worker.terminate()
+      delete this.workers[id]
+    }
   }
 
   // On a bad exit, the database will be put in a state where some jobs will be marked as running

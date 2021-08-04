@@ -43,8 +43,9 @@ export const localRegisterStrategy = new LocalStrategy(
   { usernameField: "username", passwordField: "password" },
   async (username, password, done) => {
     try {
+      const userCount = await prisma.user.count()
       const hashedPassword = await hash(password)
-      const user = await prisma.user.create({ data: { username, password: hashedPassword } })
+      const user = await prisma.user.create({ data: { username, password: hashedPassword, isAdmin: userCount === 0 } })
 
       if (!user) {
         return done(new Error("Unable to create user, is the database created?"), null)

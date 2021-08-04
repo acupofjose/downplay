@@ -4,10 +4,12 @@ import Api from "./api"
 
 class SocketManager {
   socket: WebSocket | null = null
+  isConnecting: boolean = false
   endpoint?: string
 
   connect = (token: string) => {
-    if (this.socket && !this.socket.CLOSED) return
+    if (this.socket && this.isConnecting) return
+    this.isConnecting = true
 
     //const origin = window.location.origin
     const origin = Api.host
@@ -15,9 +17,10 @@ class SocketManager {
     this.endpoint = `${url}?token=${token}`
 
     this.socket = new WebSocket(this.endpoint)
+
     this.socket.onopen = () => {
+      this.isConnecting = false
       PubSub.publish(WEBSOCKET_OPEN)
-      PubSub.publish(REFRESH_ENTITIES)
       console.log(`Connection opened to: ${url}`)
     }
 

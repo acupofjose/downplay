@@ -4,6 +4,7 @@ import path from "path"
 import ffmpeg from "fluent-ffmpeg"
 import NodeID3 from "node-id3"
 
+import Config, { ConfigItems } from "./config"
 import { promisify } from "util"
 import { parentPort, workerData } from "worker_threads"
 
@@ -25,6 +26,7 @@ type DownloadItem = {
 type ProgressCallback = (type: "audio" | "thumbnail" | "transcode", percent: number) => void
 
 // Flag for put a lock on the tick function
+let config: ConfigItems | undefined
 let isProcessing = false
 const tickInterval = 5000
 const prisma = new PrismaClient()
@@ -48,6 +50,8 @@ function init() {
 async function tick() {
   if (isProcessing) return
   isProcessing = true
+
+  config = await Config.refresh()
 
   const nextQueueItem = await prisma.queue.findFirst({
     where: { completedAt: null, isRunning: false },
@@ -103,6 +107,13 @@ async function process(instance: Queue) {
       data: { isRunning: false, workerId: null, completedAt: new Date() },
     })
 
+    if (!config?.shouldPersistJson) {
+      await prisma.entity.update({
+        where: { id: instance.entityId },
+        data: { JSON: null },
+      })
+    }
+
     parentPort?.postMessage({
       event: EVENT_DOWNLOAD_COMPLETE,
       userId: instance.userId,
@@ -151,7 +162,7 @@ async function handleDownload(
   }
 
   // YoutubeDL provides incredible JSON files...
-  const json = JSON.parse(entity.JSON) as YoutubedlResult
+  const json = JSON.parse(entity.JSON!) as YoutubedlResult
 
   // Thumbnail
   downloads.push({
@@ -209,7 +220,7 @@ function download(item: DownloadItem, onProgress: ProgressCallback): Promise<voi
     })
     data.on("error", (err: any) => reject(err))
     data.on("close", async () => {
-      if (item.key === "audio") {
+      if (item.key === "audio" && config?.shouldTranscodeAudio) {
         await transcode(item, onProgress)
       }
       resolve()

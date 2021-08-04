@@ -4,12 +4,22 @@ import { Route, Switch, withRouter } from "react-router-dom"
 import { Provider as StyletronProvider } from "styletron-react"
 import { Client as Styletron } from "styletron-engine-atomic"
 import { DarkTheme, BaseProvider } from "baseui"
+import { Spinner } from "baseui/spinner"
 
-import { Entity as PrismaEntity } from "@prisma/client"
 import Feed from "./api/feed"
 import Entity from "./api/entity"
 import SocketManager from "./socket-manager"
-import { AUTH_LOGIN, AUTH_REGISTER, PLAY_ENTITY, REFRESH_ALL, REFRESH_ENTITIES, REFRESH_FEEDS } from "./events"
+import {
+  AUTH_LOGIN,
+  AUTH_REGISTER,
+  ONBOARDING_AUTH,
+  ONBOARDING_COMPLETE,
+  PLAY_ENTITY,
+  REFRESH_ALL,
+  REFRESH_ENTITIES,
+  REFRESH_FEEDS,
+  WEBSOCKET_OPEN,
+} from "./events"
 import AppContext, { IAppContext, LOCAL_STORAGE_KEY, DEFAULT_VALUE } from "./context/AppContext"
 
 import LoginPage from "./pages/LoginPage"
@@ -21,12 +31,16 @@ import IndexPage from "./pages/IndexPage"
 import PrivateRoute from "./components/PrivateRoute"
 
 import PlayAudioModal, { PlayAudioModalProps } from "./components/PlayAudioModal"
+import OnboardingPage from "./pages/OnboardingPage"
+import Config from "./api/config"
+import { Block } from "baseui/block"
 
 const engine = new Styletron()
 
 interface AppState {
   global: IAppContext
-  isLoaded: boolean
+  isLoading: boolean
+  isInitialized: boolean
   showPlayAudioModal: boolean
   playAudioModalProps?: PlayAudioModalProps
 }
@@ -36,7 +50,8 @@ class App extends React.Component<any, AppState> {
     super(props)
     this.state = {
       global: this.getPersisted(),
-      isLoaded: false,
+      isLoading: true,
+      isInitialized: false,
       showPlayAudioModal: false,
     }
   }
@@ -55,33 +70,51 @@ class App extends React.Component<any, AppState> {
   }
 
   componentDidMount() {
+    this.init()
+
     PubSub.subscribe(AUTH_LOGIN, this.handleLoginOrRegisterEvent)
     PubSub.subscribe(AUTH_REGISTER, this.handleLoginOrRegisterEvent)
+    PubSub.subscribe(ONBOARDING_AUTH, this.handleOnboardingAuth)
+    PubSub.subscribe(ONBOARDING_COMPLETE, this.init)
+    PubSub.subscribe(PLAY_ENTITY, this.playEntity)
     PubSub.subscribe(REFRESH_ALL, this.refreshAll)
     PubSub.subscribe(REFRESH_ENTITIES, this.refreshEntities)
     PubSub.subscribe(REFRESH_FEEDS, this.refreshFeeds)
-    PubSub.subscribe(PLAY_ENTITY, this.playEntity)
-
-    if (this.state.global.token) {
-      SocketManager.connect(this.state.global.token)
-      this.refreshAll()
-    }
+    PubSub.subscribe(WEBSOCKET_OPEN, this.refreshAll)
   }
 
   componentWillUnmount() {
     PubSub.unsubscribe(this.handleLoginOrRegisterEvent)
+    PubSub.unsubscribe(this.handleOnboardingAuth)
     PubSub.unsubscribe(this.refreshAll)
     PubSub.unsubscribe(this.refreshEntities)
     PubSub.unsubscribe(this.refreshFeeds)
     PubSub.unsubscribe(this.playEntity)
+    PubSub.unsubscribe(this.init)
 
     SocketManager?.close()
+  }
+
+  init = async () => {
+    this.setState({ ...this.state, isLoading: true })
+
+    const { initialized: isInitialized } = await Config.status()
+
+    if (this.state.global.token) {
+      SocketManager.connect(this.state.global.token)
+    }
+
+    this.setState({ ...this.state, isInitialized, isLoading: false })
   }
 
   handleLoginOrRegisterEvent = (e: string, token: string) => {
     this.setState({ ...this.state, global: { ...this.state.global, token } })
     this.props.history.push("/")
     SocketManager.connect(token)
+  }
+
+  handleOnboardingAuth = (e: string, token: string) => {
+    this.setState({ ...this.state, global: { ...this.state.global, token } })
   }
 
   refreshAll = async () => {
@@ -128,20 +161,34 @@ class App extends React.Component<any, AppState> {
         <StyletronProvider value={engine}>
           <BaseProvider theme={DarkTheme}>
             <Navbar />
-            <Switch>
-              <Route path="/login" exact={true}>
-                <LoginPage />
-              </Route>
-              <PrivateRoute path="/feeds" exact={true}>
-                <FeedPage />
-              </PrivateRoute>
-              <PrivateRoute path="/settings" exact={true}>
-                <SettingsPage />
-              </PrivateRoute>
-              <PrivateRoute path="/">
-                <IndexPage />
-              </PrivateRoute>
-            </Switch>
+            {this.state.isLoading && (
+              <Block
+                position="fixed"
+                top="50%"
+                left="50%"
+                maxWidth="5rem"
+                maxHeight="5rem"
+                $style={{ zIndex: 50, transform: "translate(-50%, -50%)" }}>
+                <Spinner />
+              </Block>
+            )}
+            {!this.state.isLoading && !this.state.isInitialized && <OnboardingPage />}
+            {!this.state.isLoading && this.state.isInitialized && (
+              <Switch>
+                <Route path="/login" exact={true}>
+                  <LoginPage />
+                </Route>
+                <PrivateRoute path="/feeds" exact={true}>
+                  <FeedPage />
+                </PrivateRoute>
+                <PrivateRoute path="/settings" exact={true}>
+                  <SettingsPage />
+                </PrivateRoute>
+                <PrivateRoute path="/">
+                  <IndexPage />
+                </PrivateRoute>
+              </Switch>
+            )}
             {!!this.state.playAudioModalProps && <PlayAudioModal {...this.state.playAudioModalProps} />}
           </BaseProvider>
         </StyletronProvider>
