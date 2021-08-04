@@ -10,8 +10,7 @@ import { Block } from "baseui/block"
 import { Delete } from "baseui/icon"
 import ConfirmationModal, { ConfirmationModalProps } from "./ConfirmationModal"
 import AppContext from "../context/AppContext"
-import PlayAudioModal, { PlayAudioModalProps } from "./PlayAudioModal"
-import { Entity as PrismaEntity, Queue as PrismaQueue } from "@prisma/client"
+import { Entity as PrismaEntity, Queue as PrismaQueue, Channel as PrismaChannel } from "@prisma/client"
 import Entity from "../api/entity"
 
 type EntitiesListState = {
@@ -99,7 +98,7 @@ class EntitiesList extends React.Component<any, EntitiesListState> {
               </Card>
             </FlexGridItem>
           )}
-          {this.context.entities.map((entity: PrismaEntity & { queue: PrismaQueue }) => (
+          {this.context.entities.map((entity: PrismaEntity & { queue: PrismaQueue; channel: PrismaChannel }) => (
             <FlexGridItem
               key={entity.id}
               overrides={{ Block: { style: { position: "relative", maxWidth: "400px", margin: "1rem" } } }}>
@@ -116,7 +115,7 @@ class EntitiesList extends React.Component<any, EntitiesListState> {
                   <p>
                     <strong>{splitter(entity.title, 30)[0]}...</strong>
                   </p>
-                  <p>{entity.channel}</p>
+                  <p>{entity.channel.name}</p>
                   <p>{splitter(entity.description, 128)[0]}</p>
                 </StyledBody>
                 <StyledAction>

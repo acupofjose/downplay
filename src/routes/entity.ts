@@ -21,7 +21,7 @@ router.get("/", ensureAuthenticated, async (req, res, next) => {
     const result = await prisma.entity.findMany({
       where: { userId: (req.user as any)._id },
       orderBy: { createdAt: "desc" },
-      include: { queue: true },
+      include: { queue: true, channel: true },
     })
     res.json(result)
   } catch (err) {
