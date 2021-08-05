@@ -4,6 +4,21 @@
 
 ---
 
+<div style="text-align:center">
+  <a href="https://GitHub.com/acupofjose/downplay/graphs/commit-activity">
+  <img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg"/>
+  </a>
+  <a href="https://github.com/acupofjose/downplay/blob/master/LICENSE">
+  <img src="https://img.shields.io/github/license/Naereen/StrapDown.js.svg"/>
+  </a>
+  <a href="http://makeapullrequest.com">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square"/>
+  </a>
+  <a href="https://www.typescriptlang.org/">
+  <img src="https://github.com/aleen42/badges/raw/master/src/typescript.svg"/>
+  </a>
+</div>
+
 Goals:
 
 - [x] Entirely Self-Hostable
@@ -19,9 +34,10 @@ Goals:
 - [x] Add ID3 tags to mp3 files
 - [x] Play files from client
 - [x] Live updating client
-- [ ] CRUD Operations
 - [x] Settings management from client
+- [ ] User Management
 - [ ] Queue channels to watch and automatically download
+- [ ] CRUD Operations
 - [ ] Webhooks / Notifications
 
 ## Getting Started
