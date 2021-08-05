@@ -1,10 +1,10 @@
 <p style="text-align:center">
-<img src="assets/logo-dark.png" style="display: block; margin: 0 auto; max-width: 100%; width: 450px">
+<img src=".github/logo-padded.png" style="display: block; margin: 0 auto; max-width: 100%; width: 450px">
 </p>
 
 ---
 
-<div style="text-align:center">
+<div style="text-align:center; display: block; margin: 0 auto;">
   <a href="https://GitHub.com/acupofjose/downplay/graphs/commit-activity">
   <img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg"/>
   </a>
