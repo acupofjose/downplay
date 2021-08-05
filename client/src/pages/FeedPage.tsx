@@ -41,7 +41,7 @@ const FeedPage = () => {
                   expanded={true}>
                   {context.entities
                     .filter((e) => e.feedId === feed.id)
-                    .sort((a, b) => (a.title > b.title ? 1 : -1))
+                    .sort((a, b) => (a.publishedAt > b.publishedAt ? 1 : -1))
                     .map((entity: PrismaEntity) => (
                       <ListItem
                         endEnhancer={() => (
