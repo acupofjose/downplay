@@ -10,7 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faPlay, faRss } from "@fortawesome/free-solid-svg-icons"
 import { Button } from "baseui/button"
 import Feed from "../api/feed"
-import { PLAY_ENTITY } from "../events"
+import { PLAY_REQUESTED_ENTITY } from "../events"
 
 const FeedPage = () => {
   const context = useAppContext()
@@ -45,7 +45,10 @@ const FeedPage = () => {
                     .map((entity: PrismaEntity) => (
                       <ListItem
                         endEnhancer={() => (
-                          <Button kind="minimal" size="mini" onClick={() => PubSub.publish(PLAY_ENTITY, entity.id)}>
+                          <Button
+                            kind="minimal"
+                            size="mini"
+                            onClick={() => PubSub.publish(PLAY_REQUESTED_ENTITY, entity.id)}>
                             <FontAwesomeIcon icon={faPlay} />
                           </Button>
                         )}>

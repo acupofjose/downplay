@@ -30,6 +30,8 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^2.27.0",
+    "@sentry/node": "^6.10.0",
+    "@sentry/tracing": "^6.10.0",
     "axios": "^0.21.1",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",

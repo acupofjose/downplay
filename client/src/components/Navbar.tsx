@@ -4,6 +4,7 @@ import { Link, useHistory } from "react-router-dom"
 import { useAppContext } from "../context/AppContext"
 
 import "./Navbar.scss"
+import { USER_IS_LOGGING_OUT } from "../events"
 
 export default () => {
   const context = useAppContext()
@@ -14,7 +15,7 @@ export default () => {
     { label: "Entities", info: "/", active: false },
     { label: "Feeds", info: "/feeds", active: false },
     { label: "Settings", info: "/settings", active: false },
-    { label: "Logout" },
+    { label: "Logout", info: () => PubSub.publish(USER_IS_LOGGING_OUT), active: false },
   ] as NavItemT[])
 
   const [publicItems, setPublicItems] = React.useState([{ label: "Login", info: "/login" }] as NavItemT[])
@@ -50,9 +51,13 @@ export default () => {
         mainItems={context.token ? authenticatedItems : publicItems}
         onMainItemSelect={(item) => {
           if (selectedItem != item) {
-            history.push(item.info)
-            setSelectedItem(item)
-            setAuthenticatedItems((prev) => setItemActive(prev, item))
+            if (typeof item.info === "function") {
+              item.info.apply(null)
+            } else {
+              history.push(item.info)
+              setSelectedItem(item)
+              setAuthenticatedItems((prev) => setItemActive(prev, item))
+            }
           }
         }}
       />

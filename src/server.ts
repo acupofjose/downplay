@@ -25,6 +25,8 @@ const PORT = process.env.PORT || 3000
 async function start() {
   await Config.refresh()
 
+  require("./analytics")
+
   WorkerManager.init()
 
   const app = express()

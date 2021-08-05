@@ -39,8 +39,10 @@ const log = (data: any) => console.log(`[${workerData.name}] ${data}`)
 const error = (data: any) => console.error(`[${workerData.name}] ${data}`)
 const getWorkerId = () => workerData.id
 
-function init() {
+async function init() {
   log(`initialized`)
+  config = await Config.refresh()
+  require("../analytics")
   setInterval(tick, tickInterval)
 }
 

@@ -72,10 +72,7 @@ router.post("/delete/:id", ensureAuthenticated, async (req, res, next) => {
       }
     } catch {}
 
-    const deleteQueue = prisma.queue.delete({ where: { id: entity.queue?.id } })
-    const deleteEntity = prisma.entity.delete({ where: { id } })
-
-    await prisma.$transaction([deleteEntity, deleteQueue])
+    await prisma.entity.delete({ where: { id } })
 
     return res.json({ success: true })
   } catch (err) {
@@ -96,10 +93,15 @@ router.get("/thumbnail/:id", async (req, res, next) => {
   })
 
   if (result && result.thumbnailPath) {
-    const stats = await stat(result.thumbnailPath)
-    const total = stats.size
-    res.writeHead(200, { "Content-Length": total, "Content-Type": mime.getType(ext(result.thumbnailPath)) })
-    fs.createReadStream(result.thumbnailPath).pipe(res)
+    try {
+      const stats = await stat(result.thumbnailPath)
+      const total = stats.size
+      res.writeHead(200, { "Content-Length": total, "Content-Type": mime.getType(ext(result.thumbnailPath)) })
+      fs.createReadStream(result.thumbnailPath).pipe(res)
+    } catch (err) {
+      console.error(err)
+      res.status(500).json({ error: `Could not find thumbnail at the provided path.` })
+    }
   } else {
     res.status(400).json({ error: `Could not find a thumbnail for entity with id ${id}` })
   }

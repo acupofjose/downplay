@@ -15,7 +15,7 @@ import CreateAdminAccountForm from "../components/onboarding/CreateAdminAccountF
 import InstanceConfigForm from "../components/onboarding/InstanceConfigForm"
 import WelcomeFragment from "../components/onboarding/WelcomeFragment"
 import OnboardingContext, { IOnboardingContext } from "../context/OnboardingContext"
-import { ONBOARDING_AUTH, ONBOARDING_COMPLETE } from "../events"
+import { ONBOARDING_HAS_AUTHED, ONBOARDING_IS_COMPLETE } from "../events"
 
 import "./OnboardingPage.scss"
 
@@ -52,7 +52,7 @@ class OnboardingPage extends React.Component<any, OnboardingPageState> {
             this.state.values.setIsProcessing!(true)
 
             const { token } = await Auth.register(username, password)
-            PubSub.publish(ONBOARDING_AUTH, token)
+            PubSub.publish(ONBOARDING_HAS_AUTHED, token)
 
             const config = await Config.get(token)
 
@@ -78,7 +78,7 @@ class OnboardingPage extends React.Component<any, OnboardingPageState> {
             this.state.values.setIsProcessing!(true)
             await Config.set(this.state.values.config)
             this.state.values.setIsProcessing!(false)
-            PubSub.publish(ONBOARDING_COMPLETE)
+            PubSub.publish(ONBOARDING_IS_COMPLETE)
             return [null, true]
           } catch (err) {
             this.state.values.setIsProcessing!(false)

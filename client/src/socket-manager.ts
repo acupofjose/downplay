@@ -1,4 +1,4 @@
-import { WEBSOCKET_OPEN, REFRESH_ENTITIES, WEBSOCKET_MESSAGE } from "./events"
+import { WEBSOCKET_HAS_OPENED, REFRESH_ENTITIES, WEBSOCKET_HAS_MESSAGE } from "./events"
 import PubSub from "pubsub-js"
 import Api from "./api"
 
@@ -20,13 +20,13 @@ class SocketManager {
 
     this.socket.onopen = () => {
       this.isConnecting = false
-      PubSub.publish(WEBSOCKET_OPEN)
+      PubSub.publish(WEBSOCKET_HAS_OPENED)
       console.log(`Connection opened to: ${url}`)
     }
 
     this.socket.onmessage = (message) => {
       const json = JSON.parse(message.data)
-      PubSub.publish(WEBSOCKET_MESSAGE, json)
+      PubSub.publish(WEBSOCKET_HAS_MESSAGE, json)
     }
 
     this.socket.onclose = (ev) => {

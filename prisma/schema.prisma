@@ -8,6 +8,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["referentialActions"]
 }
 
 model Channel {
@@ -58,7 +59,7 @@ model Queue {
   userId String @map("user")
   user User @relation(fields: [userId], references: [id]) 
   workerId String?
-  entity Entity @relation(fields: [entityId], references: [id])
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
   entityId String @map("entity")
   isRunning Boolean @default(false)
   hasErrored Boolean @default(false)

@@ -1,13 +1,13 @@
 import React from "react"
 import { FormControl } from "baseui/form-control"
 import { Input } from "baseui/input"
-import { styled, useStyletron } from "baseui"
+import { useStyletron } from "baseui"
 import { ButtonGroup, SIZE, SHAPE } from "baseui/button-group"
 import { Button, KIND } from "baseui/button"
 import { Notification } from "baseui/notification"
 import { Card } from "baseui/card"
 import { useAppContext } from "../context/AppContext"
-import { AUTH_LOGIN, AUTH_REGISTER } from "../events"
+import { USER_HAS_LOGGED_IN, USER_HAS_REGISTERED } from "../events"
 import Auth from "../api/auth"
 
 const LoginPage = () => {
@@ -27,7 +27,7 @@ const LoginPage = () => {
 
     try {
       const result = await Auth.login(username, password)
-      PubSub.publish(AUTH_LOGIN, result.token)
+      PubSub.publish(USER_HAS_LOGGED_IN, result.token)
     } catch (err) {
       setError("Unable to login using these credentials")
     }
@@ -42,7 +42,7 @@ const LoginPage = () => {
 
     try {
       const result = await Auth.register(username, password)
-      PubSub.publish(AUTH_REGISTER, result.token)
+      PubSub.publish(USER_HAS_REGISTERED, result.token)
     } catch (err) {
       setError("Unable to register using these credentials.")
     }
@@ -55,8 +55,6 @@ const LoginPage = () => {
       handleLoginClick()
     }
   }
-
-  const handleForgotPasswordClick = () => {}
 
   return (
     <Card
@@ -107,13 +105,6 @@ const LoginPage = () => {
             </Button>
           )}
         </ButtonGroup>
-        <Button
-          size={SIZE.mini}
-          onClick={handleForgotPasswordClick}
-          disabled={isLoggingIn || isRegistering}
-          kind={KIND.minimal}>
-          Forgot Password?
-        </Button>
       </div>
     </Card>
   )

@@ -9,5 +9,13 @@ export default class User {
     return result.data as PrismaUser
   }
 
-  static set = async () => {}
+  static changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const endpoint = "/user/change-password"
+      const result = await Api.instance.post(endpoint, { currentPassword, newPassword })
+      return result.data as { status: boolean }
+    } catch (err) {
+      throw new Error(err.response.data.error)
+    }
+  }
 }

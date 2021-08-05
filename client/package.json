@@ -10,6 +10,8 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.35",
     "@fortawesome/free-solid-svg-icons": "^5.15.3",
     "@fortawesome/react-fontawesome": "^0.1.14",
+    "@sentry/react": "^6.10.0",
+    "@sentry/tracing": "^6.10.0",
     "axios": "^0.21.1",
     "baseui": "^10.0.0",
     "pubsub-js": "^1.9.3",

@@ -38,4 +38,12 @@ const AppContext = React.createContext<IAppContext>(DEFAULT_VALUE)
 
 export const useAppContext = () => React.useContext(AppContext)
 
+export const getPersistedContext = () => {
+  try {
+    return JSON.parse(window.localStorage.getItem(LOCAL_STORAGE_KEY) || "")
+  } catch {
+    return DEFAULT_VALUE
+  }
+}
+
 export default AppContext

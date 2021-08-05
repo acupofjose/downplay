@@ -7,6 +7,7 @@ import { Block } from "baseui/block"
 import { Card, StyledTitle, StyledContents } from "baseui/card"
 import { Button } from "baseui/button"
 import Notification, { NotificationProps } from "./Notification"
+import { CONFIG_HAS_CHANGED } from "../events"
 
 export const SystemSettingsForm = () => {
   const [state, setState] = React.useState<ConfigItems>({})
@@ -27,6 +28,7 @@ export const SystemSettingsForm = () => {
     if (Object.keys(state).length > 0) {
       try {
         await Config.set(state)
+        PubSub.publish(CONFIG_HAS_CHANGED)
         setNotification({ content: "Successfully saved settings", kind: "positive" })
       } catch (err) {
         setNotification({ content: err, kind: "negative" })

@@ -4,7 +4,13 @@ import { Card, StyledAction, StyledBody } from "baseui/card"
 import { splitter } from "../util"
 import { Button } from "baseui/button"
 import { ProgressBar } from "baseui/progress-bar"
-import { DOWNLOAD_COMPLETE, PLAY_ENTITY, REFRESH_ENTITIES, WEBSOCKET_MESSAGE, WEBSOCKET_OPEN } from "../events"
+import {
+  DOWNLOAD_IS_COMPLETE,
+  PLAY_REQUESTED_ENTITY,
+  REFRESH_ENTITIES,
+  WEBSOCKET_HAS_MESSAGE,
+  WEBSOCKET_HAS_OPENED,
+} from "../events"
 import PubSub from "pubsub-js"
 import { Block } from "baseui/block"
 import { Delete } from "baseui/icon"
@@ -34,7 +40,7 @@ class EntitiesList extends React.Component<any, EntitiesListState> {
   }
 
   componentDidMount() {
-    PubSub.subscribe(WEBSOCKET_MESSAGE, this.handleWebsocketMessage)
+    PubSub.subscribe(WEBSOCKET_HAS_MESSAGE, this.handleWebsocketMessage)
   }
 
   componentWillUnmount() {
@@ -56,7 +62,7 @@ class EntitiesList extends React.Component<any, EntitiesListState> {
       this.setState({ ...this.state, progress, status })
     }
 
-    if (data.event === DOWNLOAD_COMPLETE) {
+    if (data.event === DOWNLOAD_IS_COMPLETE) {
       PubSub.publish(REFRESH_ENTITIES)
     }
   }
@@ -124,7 +130,7 @@ class EntitiesList extends React.Component<any, EntitiesListState> {
                   {(entity.queue.completedAt || this.state.progress[entity.id] === 100) && (
                     <Button
                       overrides={{ BaseButton: { style: { width: "100%" } } }}
-                      onClick={() => PubSub.publish(PLAY_ENTITY, entity.id)}>
+                      onClick={() => PubSub.publish(PLAY_REQUESTED_ENTITY, entity.id)}>
                       Listen
                     </Button>
                   )}
