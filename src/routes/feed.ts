@@ -1,13 +1,16 @@
+import * as util from "util"
+import * as fs from "fs"
 import Podcast from "podcast"
 import { Router } from "express"
 import { PrismaClient } from ".prisma/client"
 import { ensureAuthenticated } from "./guards"
 import { ext } from "../util"
-
 const mime = require("mime")
 
 const router = Router()
 const prisma = new PrismaClient()
+
+const exists = util.promisify(fs.exists)
 
 const getSiteUrl = (req: any) => req.protocol + "://" + req.get("host")
 
@@ -67,7 +70,7 @@ router.get("/xml/:id", async (req, res, next) => {
     author: feed.author,
     feedUrl: req.protocol + "://" + req.get("host") + req.originalUrl,
     siteUrl: getSiteUrl(req),
-    imageUrl: feed.imageUrl || "",
+    imageUrl: feed.imageUrl || getSiteUrl(req) + "/icon.png",
     pubDate: new Date(),
     ttl: 60,
     itunesAuthor: feed.author,
@@ -77,19 +80,26 @@ router.get("/xml/:id", async (req, res, next) => {
   })
 
   for (const entity of entities) {
-    podcast.addItem({
-      title: entity.title,
-      description: entity.description,
-      author: entity.channel?.name,
-      url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
-      date: entity.publishedAt,
-      itunesImage: `${getSiteUrl(req)}/entity/thumbnail/${entity.id}`,
-      enclosure: {
+    try {
+      if (!entity.path || !(await exists(entity.path))) continue
+
+      podcast.addItem({
+        title: entity.title,
+        description: entity.description,
+        author: entity.channel?.name,
         url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
-        type: mime.getType(ext(entity.path!)),
-        file: entity.path!,
-      },
-    })
+        date: entity.publishedAt,
+        itunesImage: `${getSiteUrl(req)}/entity/thumbnail/${entity.id}`,
+        enclosure: {
+          url: `${getSiteUrl(req)}/entity/stream/${entity.id}`,
+          type: mime.getType(ext(entity.path!)),
+          file: entity.path!,
+        },
+      })
+    } catch (err) {
+      // Likely this entity is being pulled while download in progress
+      console.error(err)
+    }
   }
 
   const xml = podcast.buildXml()
